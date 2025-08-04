@@ -1,134 +1,93 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import WordleGrid from "../components/card/WordleGrid";
+import Wrapper from "../components/general/Wrapper";
+import { useGuessMutation } from "../request/hook";
 
-const WORD_LENGTH = 5;
-const MAX_ATTEMPTS = 6;
-const targetWord = "REACT";
-
-function WordleRoute() {
-    const [guesses, setGuesses] = useState([]); // Array of guessed words
+export const WordleRoute = () => {
+    const { mutate } = useGuessMutation();
+    const [guesses, setGuesses] = useState([]);
     const [currentGuess, setCurrentGuess] = useState("");
-    const [gameStatus, setGameStatus] = useState("playing"); // 'playing', 'won', 'lost'
+    const [gameOver, setGameOver] = useState(false);
+    const [message, setMessage] = useState("");
 
     const resetGame = () => {
-        setGuesses([])
-        setCurrentGuess("")
-        setGameStatus("playing")
-    }
-    
+        setGuesses([]);
+        setCurrentGuess("");
+        setGameOver(false);
+        setMessage("");
+    };
+
     const handleKeyDown = (e) => {
-        if (gameStatus !== "playing") return;
+        if (gameOver) return;
 
         if (e.key === "Enter") {
-            if (currentGuess.length !== WORD_LENGTH) return;
-            if (guesses.length >= MAX_ATTEMPTS) return;
-
-            // Check if guessed word matches target
-            if (currentGuess.toUpperCase() === targetWord) {
-                setGameStatus("won");
-            } else if (guesses.length + 1 >= MAX_ATTEMPTS) {
-                setGameStatus("lost");
-            }
-
-            setGuesses([...guesses, currentGuess.toUpperCase()]);
+            if (currentGuess.length !== 5 || guesses.length >= 6) return;
+            mutate(
+                { currentGuess },
+                {
+                    onSuccess: (data) => {
+                        if (data.correct) {
+                            setGuesses((prev) => [
+                                ...prev,
+                                {
+                                    guess: currentGuess,
+                                    colors: data.colors,
+                                },
+                            ]);
+                            setMessage("Congratulations! You guessed it!");
+                            setGameOver(true);
+                        } else {
+                            setGuesses((prev) => [
+                                ...prev,
+                                { guess: currentGuess, colors: data.colors },
+                            ]);
+                            if (guesses.length + 1 >= 6) {
+                                setMessage(`Game Over! The word was ...`);
+                                setGameOver(true);
+                            } else {
+                                setMessage("Try again!");
+                            }
+                        }
+                    },
+                    onError: () => {
+                        setMessage("Error submitting guess");
+                    },
+                }
+            );
             setCurrentGuess("");
         } else if (e.key === "Backspace") {
-            setCurrentGuess(currentGuess.slice(0, -1));
+            setCurrentGuess((prev) => prev.slice(0, -1));
         } else if (/^[a-zA-Z]$/.test(e.key)) {
-            if (currentGuess.length < WORD_LENGTH) {
-                setCurrentGuess(currentGuess + e.key.toUpperCase());
+            if (currentGuess.length < 5) {
+                setCurrentGuess((prev) => prev + e.key.toUpperCase());
             }
         }
     };
 
-    React.useEffect(() => {
+    useEffect(() => {
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [currentGuess, guesses, gameStatus]);
+    }, [currentGuess, guesses, gameOver]);
 
-    const getGuessColors = (guess) => {
-        // Return an array of colors for each letter
-        const colors = Array(WORD_LENGTH).fill("gray");
-        const targetLetters = targetWord.split("");
-
-        // First pass: correct letters in correct position
-        for (let i = 0; i < WORD_LENGTH; i++) {
-            if (guess[i] === targetLetters[i]) {
-                colors[i] = "green";
-                targetLetters[i] = null; // mark as used
-            }
-        }
-
-        // Second pass: correct letters in wrong position
-        for (let i = 0; i < WORD_LENGTH; i++) {
-            if (colors[i] !== "green") {
-                const index = targetLetters.indexOf(guess[i]);
-                if (index !== -1) {
-                    colors[i] = "yellow";
-                    targetLetters[index] = null; // mark as used
-                }
-            }
-        }
-        return colors;
-    };
-    console.log({guesses})
     return (
-        <div style={{ fontFamily: "Arial", padding: 20 }}>
-            <h1>Wordle React</h1>
-            {guesses.map((guess, index) => (
-                <div key={index} style={{ display: "flex", marginBottom: 5 }}>
-                    {guess.split("").map((letter, i) => (
-                        <div
-                            key={i}
-                            style={{
-                                width: 40,
-                                height: 40,
-                                lineHeight: "40px",
-                                textAlign: "center",
-                                marginRight: 5,
-                                backgroundColor: getGuessColors(guess)[i],
-                                color: "white",
-                                fontWeight: "bold",
-                                borderRadius: 4,
-                            }}
-                        >
-                            {letter}
-                        </div>
-                    ))}
-                </div>
-            ))}
-            {/* Show current guess */}
-            {gameStatus === "playing" && (
-                <div style={{ display: "flex" }}>
-                    {Array.from({ length: WORD_LENGTH }).map((_, i) => (
-                        <div
-                            key={i}
-                            style={{
-                                width: 40,
-                                height: 40,
-                                lineHeight: "40px",
-                                textAlign: "center",
-                                marginRight: 5,
-                                border: "2px solid #ccc",
-                                borderRadius: 4,
-                                fontWeight: "bold",
-                            }}
-                        >
-                            {currentGuess[i] || ""}
-                        </div>
-                    ))}
-                </div>
-            )}
-            {gameStatus === "won" && <h2>Congratulations! You guessed it!</h2>}
-            {gameStatus === "lost" && (
-                <h2>Game Over! The word was {targetWord}.</h2>
-            )}
-            {gameStatus !== "playing" && (
-                <button onClick={() => {
-                    resetGame()
-                }}>Replay</button>
-            )}
-        </div>
+        <Wrapper>
+            <div style={{ padding: 20 }}>
+                <WordleGrid
+                    guesses={guesses}
+                    currentGuess={currentGuess}
+                    gameOver={gameOver}
+                />
+                {message && <h2>{message}</h2>}
+                {gameOver && (
+                    <button
+                        onClick={() => {
+                            resetGame();
+                        }}
+                    >
+                        Replay
+                    </button>
+                )}
+            </div>
+        </Wrapper>
     );
-}
-
-export default WordleRoute;
+};

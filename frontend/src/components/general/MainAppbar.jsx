@@ -5,8 +5,7 @@ import { Menubar } from "primereact/menubar";
 import { useEffect } from "react";
 import { BiSolidEdit } from "react-icons/bi";
 import { CiLogout } from "react-icons/ci";
-import { GiSecretBook, GiTiedScroll, GiVisoredHelm } from "react-icons/gi";
-import { LiaUserCircleSolid } from "react-icons/lia";
+import { GiTiedScroll, GiVisoredHelm } from "react-icons/gi";
 import { MdOutlineManageAccounts } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
 import { MAIN_BACKGROUND } from "../../constants/colors";
@@ -31,24 +30,17 @@ export const MainAppbar = () => {
 
     var items = [
         {
-            label: "我的武將",
+            label: "遊戲",
             icon: <GiVisoredHelm style={{ marginRight: "0.5rem" }} />,
             command: () => {
-                navigate("/my-characters");
+                navigate("/menu");
             },
         },
         {
-            label: "我的戰法",
+            label: "紀錄",
             icon: <GiTiedScroll style={{ marginRight: "0.5rem" }} />,
             command: () => {
-                navigate("/my-skills");
-            },
-        },
-        {
-            label: "我的陣容",
-            icon: <GiSecretBook style={{ marginRight: "0.5rem" }} />,
-            command: () => {
-                navigate("/my-squads");
+                navigate("/wordle");
             },
         },
         {

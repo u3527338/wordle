@@ -1,7 +1,6 @@
 import React from "react";
-import NewCharacterForm from "../components/form/NewCharacterForm";
-import Wrapper from "../components/general/Wrapper";
 import { useNavigate } from "react-router-dom";
+import Wrapper from "../components/general/Wrapper";
 
 export const MenuRoute = () => {
     const navigate = useNavigate();
