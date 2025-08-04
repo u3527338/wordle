@@ -8,7 +8,6 @@ import UserModel from "./db/userModel.js";
 
 let targetWord = "REACT";
 
-
 const app = express();
 app.use(
     cors({
@@ -180,7 +179,6 @@ const getColors = (guess, target) => {
 
 const rooms = {};
 
-// Helper: emit current rooms to all clients
 const emitRooms = () => {
     io.emit("updateRooms", Object.values(rooms));
 };
@@ -197,6 +195,9 @@ io.on("connection", (socket) => {
         rooms[roomId] = {
             id: roomId,
             players: [{ id: player.id, socketId: socket.id }],
+            guessHistory: [],
+            targetWord: null,
+            startTime: null,
         };
         emitRooms();
     });
@@ -207,11 +208,21 @@ io.on("connection", (socket) => {
             `Joining room ${roomId} for user ${player.id} with socket.id = ${socket.id}`
         );
         const room = rooms[roomId];
-        if (room) {
+        console.log(room.players);
+        if (!room || room.players.length >= 2) {
+            socket.emit("error", "Cannot join");
+            return;
+        }
+        socket.join(roomId);
+        if (!room.players.find((p) => p.id === player.id))
             room.players.push({ id: player.id, socketId: socket.id });
+        emitRooms();
+
+        // When second player joins, start game
+        if (room.players.length === 2) {
+            room.targetWord = targetWord;
+            room.startTime = Date.now();
             emitRooms();
-        } else {
-            console.log(`Room ${roomId} not found`);
         }
     });
 
@@ -224,8 +235,12 @@ io.on("connection", (socket) => {
                 io.to(opponent.socketId).emit("opponentGuess", {
                     guess: currentGuess,
                     colors: getColors(currentGuess, targetWord),
-                    userId,
                 });
+                if (currentGuess === targetWord) {
+                    io.to(opponent.socketId).emit("endGame", {
+                        winner: userId,
+                    });
+                }
             }
         }
     });

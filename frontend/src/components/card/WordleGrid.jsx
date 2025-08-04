@@ -20,37 +20,51 @@ const LetterCell = ({ letter, color, style }) => {
 };
 
 const WordleGrid = ({ guesses, currentGuess = "", gameOver = false }) => {
+    const totalRows = 5; // fixed number of rows
+
+    // Create an array of indices from 0 to 4
+    const rows = Array.from({ length: totalRows }, (_, i) => i);
+
     return (
         <div style={{ width: "min-content", margin: "auto" }}>
-            {guesses.map((g, index) => (
-                <div
-                    key={index}
-                    style={{
-                        display: "flex",
-                        marginBottom: 5,
-                        width: "fit-content",
-                    }}
-                >
-                    {g.guess.split("").map((letter, i) => (
-                        <LetterCell
-                            key={i}
-                            letter={letter}
-                            color={g.colors[i]}
-                        />
-                    ))}
-                </div>
-            ))}
-            {!gameOver && (
-                <div style={{ display: "flex" }}>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                        <LetterCell
-                            key={i}
-                            letter={currentGuess[i] || ""}
-                            style={{ border: "2px solid #ccc" }}
-                        />
-                    ))}
-                </div>
-            )}
+            {rows.map((rowIdx) => {
+                // Determine if this row is filled with a guess or current input or empty
+                const guessIndex = rowIdx;
+                const isGuessRow = guessIndex < guesses.length;
+                const guess = isGuessRow ? guesses[guessIndex].guess : "";
+                const colors = isGuessRow ? guesses[guessIndex].colors : [];
+
+                return (
+                    <div
+                        key={rowIdx}
+                        style={{
+                            display: "flex",
+                            marginBottom: 5,
+                            width: "fit-content",
+                        }}
+                    >
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <LetterCell
+                                key={i}
+                                letter={
+                                    isGuessRow
+                                        ? guess[i]
+                                        : rowIdx === guesses.length
+                                        ? currentGuess[i]
+                                        : ""
+                                }
+                                color={isGuessRow ? colors[i] : undefined}
+                                style={{
+                                    border:
+                                        rowIdx >= guesses.length
+                                            ? "2px solid #ccc"
+                                            : undefined,
+                                }}
+                            />
+                        ))}
+                    </div>
+                );
+            })}
         </div>
     );
 };

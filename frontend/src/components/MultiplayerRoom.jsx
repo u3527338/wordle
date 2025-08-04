@@ -9,23 +9,36 @@ import Wrapper from "./general/Wrapper";
 const MultiplayerRoom = () => {
     const { roomId } = useParams();
     const { userId } = useStore();
-
+    const navigate = useNavigate();
     const { mutate } = useGuessMutation();
     const [currentGuess, setCurrentGuess] = useState("");
     const [guesses, setGuesses] = useState([]);
     const [opponentGuesses, setOpponentGuesses] = useState([]);
     const [gameOver, setGameOver] = useState(false);
-    const [message, setMessage] = useState("");
-    const [rooms, setRooms] = useState([]);
-    const navigate = useNavigate();
+    const [message, setMessage] = useState(null)
 
     useEffect(() => {
+        socket.emit("joinRoom", {
+            roomId,
+            player: { id: userId, isHost: false },
+        });
         const handleOpponentGuess = ({ guess, colors, userId }) => {
             setOpponentGuesses((prev) => [...prev, { guess, colors }]);
         };
+        const handleEndGame = ({ winner }) => {
+            setGameOver(true);
+            setMessage(`Winner: ${winner}`)
+        };
+        const handleError = () => {
+            navigate("/rooms");
+        };
         socket.on("opponentGuess", handleOpponentGuess);
+        socket.on("endGame", handleEndGame);
+        socket.on("error", handleError);
         return () => {
             socket.off("opponentGuess", handleOpponentGuess);
+            socket.off("endGame", handleEndGame);
+            socket.off("error", handleError);
         };
     }, []);
 
@@ -37,7 +50,6 @@ const MultiplayerRoom = () => {
         setGuesses([]);
         setCurrentGuess("");
         setGameOver(false);
-        setMessage("");
     };
 
     const handleKeyDown = (e) => {
@@ -57,25 +69,21 @@ const MultiplayerRoom = () => {
                                     colors: data.colors,
                                 },
                             ]);
-                            setMessage("Congratulations! You guessed it!");
-                            setGameOver(true);
+                            setMessage(`Winner: ${userId}`)
+                            setGameOver(true)
                         } else {
                             setGuesses((prev) => [
                                 ...prev,
                                 { guess: currentGuess, colors: data.colors },
                             ]);
                             if (guesses.length + 1 >= 6) {
-                                setMessage(`Game Over! The word was ...`);
                                 setGameOver(true);
                             } else {
-                                setMessage("Try again!");
                             }
                         }
                         handleSubmitGuess();
                     },
-                    onError: () => {
-                        setMessage("Error submitting guess");
-                    },
+                    onError: () => {},
                 }
             );
             setCurrentGuess("");
@@ -102,29 +110,12 @@ const MultiplayerRoom = () => {
                         currentGuess={currentGuess}
                         gameOver={gameOver}
                     />
-                    {gameOver && (
-                        <button
-                            onClick={() => {
-                                resetGame();
-                            }}
-                        >
-                            Replay
-                        </button>
-                    )}
                 </div>
                 <div style={{ padding: 20 }}>
                     <WordleGrid guesses={opponentGuesses} gameOver={gameOver} />
-                    {gameOver && (
-                        <button
-                            onClick={() => {
-                                resetGame();
-                            }}
-                        >
-                            Replay
-                        </button>
-                    )}
                 </div>
             </div>
+            {message && <span>{message}</span>}
         </Wrapper>
     );
 };

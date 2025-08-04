@@ -29,10 +29,6 @@ const WaitingRoom = () => {
     };
 
     const handleJoinRoom = (roomId) => {
-        socket.emit("joinRoom", {
-            roomId,
-            player: { id: userId, isHost: false },
-        });
         navigate(`/rooms/${roomId}`);
     };
 
