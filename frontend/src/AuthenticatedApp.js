@@ -5,13 +5,17 @@ import { MyCharactersRoute } from "./routes/MyCharactersRoute";
 import { MySkillsRoute } from "./routes/MySkillsRoute";
 import { MySquadsRoute } from "./routes/MySquadsRoute";
 import { SkillSetsRoute } from "./routes/SkillSetsRoute";
+import { MenuRoute } from "./routes/MenuRoute";
+import WordleRoute from "./routes/WordleRoute";
 
 export const AuthenticatedApp = () => {
     return (
         <Routes>
+            <Route path="/menu" element={<MenuRoute />} />
+            <Route path="/wordle" element={<WordleRoute />} />
             <Route path="/characters" element={<CharactersRoute />} />
             <Route path="/skillsets" element={<SkillSetsRoute />} />
-            <Route path="/books" element={<BooksRoute />} />
+            <Route path="/books" elemenFt={<BooksRoute />} />
             <Route path="/my-characters" element={<MyCharactersRoute />} />
             <Route path="/my-skills" element={<MySkillsRoute />} />
             <Route path="/my-squads" element={<MySquadsRoute />} />
