@@ -19,7 +19,7 @@ const LetterCell = ({ letter, color, style }) => {
     );
 };
 
-const WordleGrid = ({ guesses, currentGuess, gameOver }) => {
+const WordleGrid = ({ guesses, currentGuess = "", gameOver = false }) => {
     return (
         <div style={{ width: "min-content", margin: "auto" }}>
             {guesses.map((g, index) => (

@@ -2,7 +2,7 @@ import axios from "axios";
 import AWS from "aws-sdk";
 
 // const API = "https://sgk-online-api.vercel.app";
-const API = "http://localhost:3000";
+const API = "http://localhost:4000";
 axios.defaults.withCredentials = true;
 
 export const registerNewUser = async (data) => {

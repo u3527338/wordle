@@ -17,7 +17,7 @@ export const MenuRoute = () => {
                 </button>
                 <button
                     onClick={() => {
-                        navigate("/wordle");
+                        navigate("/rooms");
                     }}
                 >
                     Multiple Player
