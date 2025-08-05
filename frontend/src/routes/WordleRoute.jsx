@@ -20,38 +20,6 @@ export const WordleRoute = () => {
 
         if (e.key === "Enter") {
             if (currentGuess.length !== 5 || guesses.length >= 6) return;
-            // mutate(
-            //     { currentGuess },
-            //     {
-            //         onSuccess: (data) => {
-            //             if (data.correct) {
-            //                 setGuesses((prev) => [
-            //                     ...prev,
-            //                     {
-            //                         guess: currentGuess,
-            //                         colors: data.colors,
-            //                     },
-            //                 ]);
-            //                 setMessage("Congratulations! You guessed it!");
-            //                 setGameOver(true);
-            //             } else {
-            //                 setGuesses((prev) => [
-            //                     ...prev,
-            //                     { guess: currentGuess, colors: data.colors },
-            //                 ]);
-            //                 if (guesses.length + 1 >= 6) {
-            //                     setMessage(`Game Over! The word was ...`);
-            //                     setGameOver(true);
-            //                 } else {
-            //                     setMessage("Try again!");
-            //                 }
-            //             }
-            //         },
-            //         onError: () => {
-            //             setMessage("Error submitting guess");
-            //         },
-            //     }
-            // );
             setCurrentGuess("");
         } else if (e.key === "Backspace") {
             setCurrentGuess((prev) => prev.slice(0, -1));

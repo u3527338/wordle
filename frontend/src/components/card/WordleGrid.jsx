@@ -19,7 +19,7 @@ const LetterCell = ({ letter, color, style }) => {
     );
 };
 
-const WordleGrid = ({ guesses, currentGuess = "", gameOver = false }) => {
+const WordleGrid = ({ guesses, currentGuess = "" }) => {
     const totalRows = 5; // fixed number of rows
 
     // Create an array of indices from 0 to 4

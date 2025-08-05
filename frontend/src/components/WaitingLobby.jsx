@@ -8,6 +8,8 @@ const WaitingLobby = () => {
     const [rooms, setRooms] = useState([]);
     const navigate = useNavigate();
     const { userId } = useStore();
+    const [mode, setMode] = useState("server"); // 'server' or 'custom'
+    const [customWord, setCustomWord] = useState("");
 
     useEffect(() => {
         socket.emit("getRooms");
@@ -22,10 +24,12 @@ const WaitingLobby = () => {
 
     const handleCreateRoom = () => {
         const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-        socket.emit("createRoom", {
+        const data = {
             roomId,
             player: { id: userId, isHost: true },
-        });
+            mode, // 'server' or 'custom'
+        };
+        socket.emit("createRoom", data);
         navigate(`/rooms/${roomId}`);
     };
 
@@ -36,6 +40,26 @@ const WaitingLobby = () => {
     return (
         <div className="lobby-container">
             <h2 className="lobby-title">Waiting Rooms</h2>
+            <div className="mode-selection">
+                <label>
+                    <input
+                        type="radio"
+                        value="server"
+                        checked={mode === "server"}
+                        onChange={() => setMode("server")}
+                    />
+                    Server picks the word
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        value="custom"
+                        checked={mode === "custom"}
+                        onChange={() => setMode("custom")}
+                    />
+                    Choose a word
+                </label>
+            </div>
             <button className="create-room-btn" onClick={handleCreateRoom}>
                 Create New Room
             </button>

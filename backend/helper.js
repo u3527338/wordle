@@ -32,3 +32,8 @@ export const getColors = (guess, target) => {
     }
     return result;
 };
+
+export const isValidWord = (word) => {
+    const words = wordleData.words;
+    return words.includes(word.toUpperCase());
+};

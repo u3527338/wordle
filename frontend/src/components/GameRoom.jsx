@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import FormModal from "../components/modal/FormModal";
 import { useStore } from "../hook/useStore";
 import socket from "../socket";
 import WordleGrid from "./card/WordleGrid";
 import Wrapper from "./general/Wrapper";
-import FormModal from "../components/modal/FormModal";
 
 const GameRoom = () => {
     const { roomId } = useParams();
@@ -13,8 +13,13 @@ const GameRoom = () => {
     const [currentGuess, setCurrentGuess] = useState("");
     const [guesses, setGuesses] = useState([]);
     const [opponentGuesses, setOpponentGuesses] = useState([]);
-    const [gameOver, setGameOver] = useState(false);
+    const [gameStatus, setGameStatus] = useState("waiting");
     const [message, setMessage] = useState(null);
+    const [questionModalState, setQuestionModalState] = useState({
+        open: false,
+        forPlayerId: null,
+        input: "",
+    });
 
     useEffect(() => {
         socket.emit("joinRoom", {
@@ -27,11 +32,15 @@ const GameRoom = () => {
         const handleOpponentGuess = ({ guess, colors }) => {
             setOpponentGuesses((prev) => [...prev, { guess, colors }]);
         };
-        const handleStartNewGame = ({ message }) => {
+        const handleStartNewGame = () => {
             resetGameStatus();
+            setGameStatus("playing");
+        };
+        const handleQuestion = ({ forPlayerId }) => {
+            handleOpenModal(forPlayerId);
         };
         const handleEndGame = ({ winner }) => {
-            setGameOver(true);
+            setGameStatus("end");
             setMessage(`Winner: ${winner}`);
         };
         const handlePlayerLeft = ({ userId }) => {
@@ -43,6 +52,7 @@ const GameRoom = () => {
         socket.on("selfGuess", handleSelfGuess);
         socket.on("opponentGuess", handleOpponentGuess);
         socket.on("startNewGame", handleStartNewGame);
+        socket.on("requestCustomQuestion", handleQuestion);
         socket.on("endGame", handleEndGame);
         socket.on("playerLeft", handlePlayerLeft);
         socket.on("error", handleError);
@@ -57,6 +67,21 @@ const GameRoom = () => {
         };
     }, []);
 
+    const handleOpenModal = (forPlayerId) => {
+        setQuestionModalState({ open: true, forPlayerId, input: "" });
+    };
+
+    const handleCloseModal = () => {
+        setQuestionModalState({ open: false, forPlayerId: null, input: "" });
+    };
+
+    const handleInputChange = (value) => {
+        setQuestionModalState((prev) => ({
+            ...prev,
+            input: value.toUpperCase(),
+        }));
+    };
+
     const handleSubmitGuess = () => {
         socket.emit("submitGuess", { roomId, userId, currentGuess });
     };
@@ -65,23 +90,22 @@ const GameRoom = () => {
         setGuesses([]);
         setOpponentGuesses([]);
         setCurrentGuess("");
-        setGameOver(false);
         setMessage(null);
+        handleCloseModal()
     };
 
-    const resetGame = () => {
-        resetGameStatus();
+    const replayGame = () => {
         socket.emit("resetGame", { roomId });
     };
 
     const leaveGame = () => {
         socket.emit("leaveRoom", { roomId, userId });
-        resetGameStatus();
+        resetGameStatus("end");
         navigate("/rooms");
     };
 
     const handleKeyDown = (e) => {
-        if (gameOver) return;
+        if (gameStatus !== "playing") return;
 
         if (e.key === "Enter") {
             if (currentGuess.length !== 5 || guesses.length >= 5) return;
@@ -99,30 +123,59 @@ const GameRoom = () => {
     useEffect(() => {
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [currentGuess, guesses, gameOver]);
+    }, [currentGuess, guesses]);
 
     return (
         <Wrapper>
             <div style={{ display: "flex" }}>
                 <div style={{ padding: 20 }}>
-                    <WordleGrid
-                        guesses={guesses}
-                        currentGuess={currentGuess}
-                        gameOver={gameOver}
-                    />
+                    <WordleGrid guesses={guesses} currentGuess={currentGuess} />
                 </div>
                 <div style={{ padding: 20 }}>
-                    <WordleGrid guesses={opponentGuesses} gameOver={gameOver} />
+                    <WordleGrid guesses={opponentGuesses} />
                 </div>
             </div>
             {message && <span>{message}</span>}
-            <FormModal
-                open={gameOver}
-                handleClose={resetGameStatus}
-                customButton={true}
-            >
+            <FormModal open={questionModalState.open} customButton={true}>
                 <div>
-                    <button onClick={resetGame}>Replay</button>
+                    <h3>Enter a 5-letter word for your opponent</h3>
+                    <input
+                        autoFocus
+                        value={questionModalState.input}
+                        onChange={(e) => handleInputChange(e.target.value)}
+                        maxLength={5}
+                    />
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-around",
+                        }}
+                    >
+                        <button
+                            onClick={() => {
+                                if (
+                                    questionModalState.input.length === 5 &&
+                                    /^[A-Za-z]+$/.test(questionModalState.input)
+                                ) {
+                                    socket.emit("submitCustomQuestion", {
+                                        forPlayerId:
+                                            questionModalState.forPlayerId,
+                                        customWord: questionModalState.input,
+                                    });
+                                    handleCloseModal();
+                                } else {
+                                    alert("Please enter a valid 5-letter word");
+                                }
+                            }}
+                        >
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            </FormModal>
+            <FormModal open={gameStatus === "end"} customButton={true}>
+                <div>
+                    <button onClick={replayGame}>Replay</button>
                     <button onClick={leaveGame}>Leave</button>
                 </div>
             </FormModal>

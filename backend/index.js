@@ -5,7 +5,7 @@ import http from "http";
 import mongoose from "mongoose";
 import { Server } from "socket.io";
 import UserModel from "./db/userModel.js";
-import { getColors, getTargetWord } from "./helper.js";
+import { getColors, getTargetWord, isValidWord } from "./helper.js";
 
 const app = express();
 app.use(
@@ -126,10 +126,42 @@ app.get("/user/:userId", async (req, res) => {
     }
 });
 const rooms = {};
+const tempCustomWords = {};
 
 // Helper to emit current rooms state
 const emitRooms = () => {
     io.emit("updateRooms", Object.values(rooms));
+};
+
+// Function to start a new game in a room
+const startNewGame = (room) => {
+    room.guessHistory = [];
+    room.startTime = Date.now();
+    console.log(room.mode);
+    if (room.mode === "server") {
+        // Assign one target word to all players
+        const targetWord = getTargetWord();
+        room.players.forEach((p) => (p.targetWord = targetWord));
+    } else {
+        const [player1, player2] = room.players;
+        // Ask player 1 to set a question for player 2
+        io.to(player1.socketId).emit("requestCustomQuestion", {
+            forPlayerId: player2.id,
+        });
+        // Ask player 2 to set a question for player 1
+        io.to(player2.socketId).emit("requestCustomQuestion", {
+            forPlayerId: player1.id,
+        });
+    }
+
+    // Notify each player that game has started
+    if (room.players.every((p) => !!p.targetWord)) {
+        room.players.forEach((p) => {
+            io.to(p.socketId).emit("startNewGame");
+        });
+    }
+
+    emitRooms();
 };
 
 io.on("connection", (socket) => {
@@ -142,7 +174,7 @@ io.on("connection", (socket) => {
     });
 
     // Create a new room
-    socket.on("createRoom", ({ roomId, player }) => {
+    socket.on("createRoom", ({ roomId, player, mode }) => {
         console.log(
             `Create room ${roomId} for user ${player.id} with socket.id=${socket.id}`
         );
@@ -151,7 +183,7 @@ io.on("connection", (socket) => {
             hostName: player.id,
             players: [{ id: player.id, socketId: socket.id }],
             guessHistory: [],
-            targetWord: null,
+            mode,
             startTime: null,
         };
         emitRooms();
@@ -165,22 +197,56 @@ io.on("connection", (socket) => {
             return;
         }
         socket.join(roomId);
+        socket.roomId = roomId; // Store roomId on socket
         if (!room.players.find((p) => p.id === player.id))
             room.players.push({ id: player.id, socketId: socket.id });
         emitRooms();
 
-        // Start game when second player joins
+        // When second player joins, start game and handle custom question exchange
         if (room.players.length === 2) {
-            room.targetWord = getTargetWord();
-            room.startTime = Date.now();
-            emitRooms();
+            startNewGame(room);
+        }
+    });
+
+    socket.on("submitCustomQuestion", ({ forPlayerId, customWord }) => {
+        const roomId = socket.roomId;
+        console.log(roomId);
+        if (!roomId || !rooms[roomId]) return; // ensure socket has room context
+        const room = rooms[roomId];
+
+        // Save custom word for the target player
+        tempCustomWords[forPlayerId] = customWord;
+
+        // Check if both custom words are submitted
+        if (Object.keys(tempCustomWords).length === 2) {
+            console.log("hello");
+            // Assign each player's target word
+            for (const p of room.players) {
+                const targetWord = tempCustomWords[p.id]; // the word set for this player
+                if (targetWord) {
+                    p.targetWord = targetWord;
+                }
+            }
+            // Clear temp storage
+            Object.keys(tempCustomWords).forEach(
+                (k) => delete tempCustomWords[k]
+            );
+
+            // Start the game
+            startNewGame(room);
         }
     });
 
     // Handle guesses
     socket.on("submitGuess", ({ roomId, userId, currentGuess }) => {
         const room = rooms[roomId];
-        if (!room || !room.targetWord) return;
+        if (!room || !room.players) return;
+
+        const player = room.players.find((p) => p.id === userId);
+        if (!player || !player.targetWord) {
+            socket.emit("error", "Player target word not found");
+            return;
+        }
 
         const guess = currentGuess.toUpperCase();
         if (guess.length !== 5 || !/^[A-Z]+$/.test(guess)) {
@@ -188,33 +254,24 @@ io.on("connection", (socket) => {
             return;
         }
 
-        const colors = getColors(guess, room.targetWord);
+        const colors = getColors(guess, player.targetWord);
         room.guessHistory.push({ guess, colors, userId });
 
-        // Identify socket IDs
-        const selfSocketId = room.players.find(
-            (p) => p.socketId === socket.id
-        )?.socketId;
-        const opponentSocketId = room.players.find(
-            (p) => p.socketId !== socket.id
-        )?.socketId;
+        // Feedback to self
+        io.to(socket.id).emit("selfGuess", { guess, colors });
 
-        // Send back to self
-        if (selfSocketId) {
-            io.to(selfSocketId).emit("selfGuess", { guess, colors });
-        }
+        // Feedback to opponent
+        room.players.forEach((p) => {
+            if (p.id !== userId) {
+                io.to(p.socketId).emit("opponentGuess", { guess, colors });
+            }
+        });
 
-        // Send to opponent
-        if (opponentSocketId) {
-            io.to(opponentSocketId).emit("opponentGuess", { guess, colors });
-        }
-
-        // Check for win
-        if (guess === room.targetWord) {
-            // Notify all players
-            room.players.forEach((p) =>
-                io.to(p.socketId).emit("endGame", { winner: userId })
-            );
+        // Win check
+        if (guess === player.targetWord) {
+            room.players.forEach((p) => {
+                io.to(p.socketId).emit("endGame", { winner: userId });
+            });
         }
     });
 
@@ -222,16 +279,7 @@ io.on("connection", (socket) => {
     socket.on("resetGame", ({ roomId }) => {
         const room = rooms[roomId];
         if (room) {
-            room.guessHistory = [];
-            room.targetWord = getTargetWord();
-            room.startTime = Date.now();
-
-            // Notify all players to start fresh
-            room.players.forEach((p) => {
-                io.to(p.socketId).emit("startNewGame", {
-                    message: "New game started!",
-                });
-            });
+            startNewGame(room);
         }
     });
 
@@ -239,7 +287,7 @@ io.on("connection", (socket) => {
     socket.on("leaveRoom", ({ roomId, userId }) => {
         const room = rooms[roomId];
         if (room) {
-            // Remove user
+            // Remove user from room
             room.players = room.players.filter((p) => p.id !== userId);
 
             // Notify remaining players
@@ -255,7 +303,7 @@ io.on("connection", (socket) => {
         }
     });
 
-    // Delete room (admin or special case)
+    // Delete room
     socket.on("deleteRoom", ({ roomId }) => {
         delete rooms[roomId];
         emitRooms();
@@ -270,14 +318,14 @@ io.on("connection", (socket) => {
             // Remove socket from room
             room.players = room.players.filter((p) => p.socketId !== socket.id);
 
-            // If no players left, delete room
+            // Notify remaining players
+            room.players.forEach((p) => {
+                io.to(p.socketId).emit("playerLeft", { userId: p.id });
+            });
+
+            // Delete room if empty
             if (room.players.length === 0) {
                 delete rooms[roomId];
-            } else {
-                // Notify remaining players
-                room.players.forEach((p) => {
-                    io.to(p.socketId).emit("playerLeft", { userId: p.id });
-                });
             }
         }
         emitRooms();
