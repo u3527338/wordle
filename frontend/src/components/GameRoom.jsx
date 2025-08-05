@@ -14,19 +14,13 @@ const GameRoom = () => {
     const [currentGuess, setCurrentGuess] = useState("");
     const [guesses, setGuesses] = useState([]);
     const [opponentGuesses, setOpponentGuesses] = useState([]);
-
-    // gameStatus: 'waiting', 'assigning',"assigned", 'playing', 'end'
     const [gameStatus, setGameStatus] = useState("waiting");
     const [message, setMessage] = useState(null);
-
     const [questionModalState, setQuestionModalState] = useState({
         open: false,
         forPlayerId: null,
         input: "",
     });
-
-    // For display purposes
-    const [waitingMessage, setWaitingMessage] = useState("");
 
     const resetGameStatus = () => {
         setGuesses([]);
@@ -36,63 +30,54 @@ const GameRoom = () => {
         setGameStatus("waiting");
     };
 
-    // Handle socket events
+    const socketHandlers = {
+        selfGuess: ({ guess, colors }) =>
+            setGuesses((prev) => [...prev, { guess, colors }]),
+        opponentGuess: ({ guess, colors }) =>
+            setOpponentGuesses((prev) => [...prev, { guess, colors }]),
+        startNewGame: () => {
+            setGameStatus("playing");
+            setMessage(null);
+        },
+        requestAnswerAssignment: ({ forPlayerId }) => {
+            setGameStatus("assigning");
+            handleOpenModal(forPlayerId);
+        },
+        endGame: ({ winner }) => {
+            setGameStatus("end");
+            setMessage(`Winner: ${winner}`);
+        },
+        resetGameStatus: () => {
+            resetGameStatus();
+        },
+        playerLeft: ({ userId }) => {
+            resetGameStatus();
+        },
+        error: () => {
+            console.log("error");
+            navigate("/rooms");
+        },
+    };
+
+    const registerSocketEvents = (handlers) => {
+        Object.entries(handlers).forEach(([event, handler]) =>
+            socket.on(event, handler)
+        );
+    };
+    const deregisterSocketEvents = (handlers) => {
+        socket.off("joinRoom");
+        Object.entries(handlers).forEach(([event, handler]) =>
+            socket.off(event, handler)
+        );
+    };
+
     useEffect(() => {
         socket.emit("joinRoom", {
             roomId,
             player: { id: userId, isHost: false },
         });
-
-        const handleSelfGuess = ({ guess, colors }) => {
-            setGuesses((prev) => [...prev, { guess, colors }]);
-        };
-
-        const handleOpponentGuess = ({ guess, colors }) => {
-            setOpponentGuesses((prev) => [...prev, { guess, colors }]);
-        };
-
-        const handleStartNewGame = () => {
-            setGameStatus("playing");
-            setMessage(null);
-        };
-
-        const handleQuestion = ({ forPlayerId }) => {
-            setGameStatus("assigning");
-            handleOpenModal(forPlayerId);
-        };
-
-        const handleEndGame = ({ winner }) => {
-            setGameStatus("end");
-            setMessage(`Winner: ${winner}`);
-        };
-
-        const handlePlayerLeft = ({ userId }) => {
-            resetGameStatus();
-        };
-
-        const handleError = () => {
-            navigate("/rooms");
-        };
-
-        socket.on("selfGuess", handleSelfGuess);
-        socket.on("opponentGuess", handleOpponentGuess);
-        socket.on("startNewGame", handleStartNewGame);
-        socket.on("requestAnswerAssignment", handleQuestion);
-        socket.on("endGame", handleEndGame);
-        socket.on("resetGameStatus", resetGameStatus);
-        socket.on("playerLeft", handlePlayerLeft);
-        socket.on("error", handleError);
-
-        return () => {
-            socket.off("selfGuess", handleSelfGuess);
-            socket.off("opponentGuess", handleOpponentGuess);
-            socket.off("startNewGame", handleStartNewGame);
-            socket.off("requestAnswerAssignment", handleQuestion);
-            socket.off("endGame", handleEndGame);
-            socket.off("resetGameStatus");
-            socket.off("playerLeft", handlePlayerLeft);
-            socket.off("error", handleError);
-        };
+        registerSocketEvents(socketHandlers);
+        return () => deregisterSocketEvents(socketHandlers);
     }, []);
 
     const handleOpenModal = (forPlayerId) => {
@@ -110,7 +95,6 @@ const GameRoom = () => {
         }));
     };
 
-    // Submit answer for custom mode
     const handleAnswerSubmit = () => {
         if (
             questionModalState.input.length === 5 &&
@@ -120,7 +104,6 @@ const GameRoom = () => {
                 forPlayerId: questionModalState.forPlayerId,
                 customWord: questionModalState.input,
             });
-            // handleCloseModal();
             setGameStatus("assigned");
         } else {
             alert("Please enter a valid 5-letter word");
@@ -149,6 +132,7 @@ const GameRoom = () => {
         setOpponentGuesses([]);
         setCurrentGuess("");
         setMessage(null);
+        console.log("leave");
         navigate("/rooms");
     };
 
@@ -176,7 +160,7 @@ const GameRoom = () => {
         }
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [gameStatus, currentGuess, guesses]);
-    console.log(gameStatus);
+
     return (
         <Wrapper>
             <div style={{ display: "flex" }}>
@@ -188,7 +172,9 @@ const GameRoom = () => {
                 </div>
             </div>
 
-            {message && <span>{message}</span>}
+            <FormModal open={gameStatus === "waiting"}>
+                <span>Waiting for others to join...</span>
+            </FormModal>
 
             {/* Modal for answer input */}
             <FormModal open={questionModalState.open}>

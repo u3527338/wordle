@@ -125,8 +125,8 @@ app.get("/user/:userId", async (req, res) => {
         });
     }
 });
+
 const rooms = {};
-const tempCustomWords = {};
 
 // Helper to emit current rooms state
 const emitRooms = () => {

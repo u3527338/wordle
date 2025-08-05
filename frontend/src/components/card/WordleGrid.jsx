@@ -1,18 +1,14 @@
-const LetterCell = ({ letter, color, style }) => {
+import "../../styles/Wordle.css";
+
+const LetterCell = ({ letter, color, style, animate }) => {
+    const className = `letter-cell ${animate ? "flip" : ""}`;
     return (
         <div
             style={{
-                width: 80,
-                height: 80,
-                lineHeight: "80px",
-                textAlign: "center",
-                marginRight: 5,
-                backgroundColor: color,
-                color: "white",
-                fontWeight: "bold",
-                borderRadius: 4,
+                backgroundColor: color || "#ddd",
                 ...style,
             }}
+            className={className}
         >
             <span>{letter}</span>
         </div>
@@ -21,18 +17,15 @@ const LetterCell = ({ letter, color, style }) => {
 
 const WordleGrid = ({ guesses, currentGuess = "" }) => {
     const totalRows = 5; // fixed number of rows
-
-    // Create an array of indices from 0 to 4
     const rows = Array.from({ length: totalRows }, (_, i) => i);
 
     return (
         <div style={{ width: "min-content", margin: "auto" }}>
             {rows.map((rowIdx) => {
-                // Determine if this row is filled with a guess or current input or empty
-                const guessIndex = rowIdx;
-                const isGuessRow = guessIndex < guesses.length;
-                const guess = isGuessRow ? guesses[guessIndex].guess : "";
-                const colors = isGuessRow ? guesses[guessIndex].colors : [];
+                const isGuessRow = rowIdx < guesses.length;
+                const guess = isGuessRow ? guesses[rowIdx].guess : "";
+                const colors = isGuessRow ? guesses[rowIdx].colors : [];
+                const isCurrentRow = rowIdx === guesses.length;
 
                 return (
                     <div
@@ -49,7 +42,7 @@ const WordleGrid = ({ guesses, currentGuess = "" }) => {
                                 letter={
                                     isGuessRow
                                         ? guess[i]
-                                        : rowIdx === guesses.length
+                                        : isCurrentRow
                                         ? currentGuess[i]
                                         : ""
                                 }
@@ -60,6 +53,7 @@ const WordleGrid = ({ guesses, currentGuess = "" }) => {
                                             ? "2px solid #ccc"
                                             : undefined,
                                 }}
+                                animate={isGuessRow}
                             />
                         ))}
                     </div>
