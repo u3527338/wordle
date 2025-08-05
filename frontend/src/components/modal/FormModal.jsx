@@ -1,50 +1,12 @@
-import {
-    Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-} from "@mui/material";
+import "../../styles/Modal.css";
 
-const FormModal = ({
-    title = "New",
-    open,
-    handleClose,
-    children,
-    parentSx,
-    sx,
-    customButton = false,
-}) => {
+const FormModal = ({ open, children }) => {
+    if (!open) return null;
+
     return (
-        <Dialog
-            open={open}
-            onClose={handleClose}
-            sx={{
-                "& .MuiDialog-paper": {
-                    backgroundColor: "rgba(25,25,25,0.7)",
-                    marginTop: '96px',
-                    width: "50%",
-                    height: "50%",
-                    ...parentSx,
-                },
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-            }}
-        >
-            <DialogTitle color="white">{title}</DialogTitle>
-            <DialogContent sx={{ width: "100%", maxHeight: "600px", ...sx }}>
-                {children}
-            </DialogContent>
-            {!customButton && (
-                <DialogActions>
-                    <Button onClick={handleClose} color="primary">
-                        關閉
-                    </Button>
-                </DialogActions>
-            )}
-        </Dialog>
+        <div className="modal-overlay">
+            <div className="modal-content">{children}</div>
+        </div>
     );
 };
-
 export default FormModal;

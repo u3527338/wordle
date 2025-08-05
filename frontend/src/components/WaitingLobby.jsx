@@ -9,7 +9,6 @@ const WaitingLobby = () => {
     const navigate = useNavigate();
     const { userId } = useStore();
     const [mode, setMode] = useState("server"); // 'server' or 'custom'
-    const [customWord, setCustomWord] = useState("");
 
     useEffect(() => {
         socket.emit("getRooms");
@@ -27,7 +26,7 @@ const WaitingLobby = () => {
         const data = {
             roomId,
             player: { id: userId, isHost: true },
-            mode, // 'server' or 'custom'
+            mode,
         };
         socket.emit("createRoom", data);
         navigate(`/rooms/${roomId}`);
@@ -63,28 +62,38 @@ const WaitingLobby = () => {
             <button className="create-room-btn" onClick={handleCreateRoom}>
                 Create New Room
             </button>
-            {rooms.length === 0 ? (
-                <p className="no-rooms">No available rooms right now.</p>
-            ) : (
-                <div className="room-list">
-                    {rooms.map((room) => (
+            <div className="room-list">
+                {rooms.length === 0 ? (
+                    <p className="no-rooms">No available rooms right now.</p>
+                ) : (
+                    rooms.map((room) => (
                         <div key={room.id} className="room-card">
                             <div className="room-info">
                                 <h3 className="room-id">Room ID: {room.id}</h3>
                                 <p className="host-name">
                                     Host: {room.hostName || "Host"}
                                 </p>
+                                <p className="room-mode">
+                                    Mode:{" "}
+                                    {room.mode === "server"
+                                        ? "Server picks the word"
+                                        : "Choose a word"}
+                                </p>
+                                <p className="player-count">
+                                    Players: {room.players.length} / 2
+                                </p>
                             </div>
                             <button
                                 className="join-btn"
                                 onClick={() => handleJoinRoom(room.id)}
+                                disabled={room.players.length >= 2}
                             >
-                                Join
+                                {room.players.length >= 2 ? "Full" : "Join"}
                             </button>
                         </div>
-                    ))}
-                </div>
-            )}
+                    ))
+                )}
+            </div>
         </div>
     );
 };

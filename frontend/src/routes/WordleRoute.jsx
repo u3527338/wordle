@@ -8,7 +8,7 @@ export const WordleRoute = () => {
     const [gameOver, setGameOver] = useState(false);
     const [message, setMessage] = useState("");
 
-    const resetGame = () => {
+    const replayGame = () => {
         setGuesses([]);
         setCurrentGuess("");
         setGameOver(false);
@@ -47,7 +47,7 @@ export const WordleRoute = () => {
                 {gameOver && (
                     <button
                         onClick={() => {
-                            resetGame();
+                            replayGame();
                         }}
                     >
                         Replay
