@@ -5,8 +5,7 @@ import http from "http";
 import mongoose from "mongoose";
 import { Server } from "socket.io";
 import UserModel from "./db/userModel.js";
-
-let targetWord = "REACT";
+import { getColors, getTargetWord } from "./helper.js";
 
 const app = express();
 app.use(
@@ -126,59 +125,9 @@ app.get("/user/:userId", async (req, res) => {
         });
     }
 });
-
-app.post("/guess", (req, res) => {
-    const { currentGuess } = req.body;
-    // Basic validation
-    if (
-        !currentGuess ||
-        currentGuess.length !== 5 ||
-        !/^[A-Z]+$/.test(currentGuess)
-    ) {
-        return res.status(400).json({ message: "Invalid guess" });
-    }
-
-    // Check guess correctness
-    const isCorrect = currentGuess === targetWord;
-    const colors = getColors(currentGuess, targetWord);
-    if (isCorrect) {
-        return res.json({
-            correct: true,
-            colors,
-            message: "Correct!",
-        });
-    }
-    res.json({ correct: false, colors, message: "Try again" });
-});
-
-const getColors = (guess, target) => {
-    const guessLetters = guess.split("");
-    const targetLetters = target.split("");
-    const result = Array(5).fill("gray");
-
-    // First pass: correct position
-    for (let i = 0; i < 5; i++) {
-        if (guessLetters[i] === targetLetters[i]) {
-            result[i] = "green";
-            targetLetters[i] = null; // mark used
-        }
-    }
-
-    // Second pass: wrong position
-    for (let i = 0; i < 5; i++) {
-        if (result[i] !== "green") {
-            const index = targetLetters.indexOf(guessLetters[i]);
-            if (index !== -1) {
-                result[i] = "yellow";
-                targetLetters[index] = null; // mark as used
-            }
-        }
-    }
-    return result;
-};
-
 const rooms = {};
 
+// Helper to emit current rooms state
 const emitRooms = () => {
     io.emit("updateRooms", Object.values(rooms));
 };
@@ -187,13 +136,19 @@ io.on("connection", (socket) => {
     // Send current rooms to new connection
     socket.emit("updateRooms", Object.values(rooms));
 
-    // Create a room
+    // Get list of rooms
+    socket.on("getRooms", () => {
+        emitRooms();
+    });
+
+    // Create a new room
     socket.on("createRoom", ({ roomId, player }) => {
         console.log(
-            `Creating room ${roomId} for user ${player.id} with socket.id = ${socket.id}`
+            `Create room ${roomId} for user ${player.id} with socket.id=${socket.id}`
         );
         rooms[roomId] = {
             id: roomId,
+            hostName: player.id,
             players: [{ id: player.id, socketId: socket.id }],
             guessHistory: [],
             targetWord: null,
@@ -202,13 +157,9 @@ io.on("connection", (socket) => {
         emitRooms();
     });
 
-    // Join existing room
+    // Join an existing room
     socket.on("joinRoom", ({ roomId, player }) => {
-        console.log(
-            `Joining room ${roomId} for user ${player.id} with socket.id = ${socket.id}`
-        );
         const room = rooms[roomId];
-        console.log(room.players);
         if (!room || room.players.length >= 2) {
             socket.emit("error", "Cannot join");
             return;
@@ -218,34 +169,93 @@ io.on("connection", (socket) => {
             room.players.push({ id: player.id, socketId: socket.id });
         emitRooms();
 
-        // When second player joins, start game
+        // Start game when second player joins
         if (room.players.length === 2) {
-            room.targetWord = targetWord;
+            room.targetWord = getTargetWord();
             room.startTime = Date.now();
             emitRooms();
         }
     });
 
     // Handle guesses
-    socket.on("playerGuess", ({ roomId, userId, currentGuess }) => {
+    socket.on("submitGuess", ({ roomId, userId, currentGuess }) => {
+        const room = rooms[roomId];
+        if (!room || !room.targetWord) return;
+
+        const guess = currentGuess.toUpperCase();
+        if (guess.length !== 5 || !/^[A-Z]+$/.test(guess)) {
+            socket.emit("error", "Invalid guess");
+            return;
+        }
+
+        const colors = getColors(guess, room.targetWord);
+        room.guessHistory.push({ guess, colors, userId });
+
+        // Identify socket IDs
+        const selfSocketId = room.players.find(
+            (p) => p.socketId === socket.id
+        )?.socketId;
+        const opponentSocketId = room.players.find(
+            (p) => p.socketId !== socket.id
+        )?.socketId;
+
+        // Send back to self
+        if (selfSocketId) {
+            io.to(selfSocketId).emit("selfGuess", { guess, colors });
+        }
+
+        // Send to opponent
+        if (opponentSocketId) {
+            io.to(opponentSocketId).emit("opponentGuess", { guess, colors });
+        }
+
+        // Check for win
+        if (guess === room.targetWord) {
+            // Notify all players
+            room.players.forEach((p) =>
+                io.to(p.socketId).emit("endGame", { winner: userId })
+            );
+        }
+    });
+
+    // Reset game
+    socket.on("resetGame", ({ roomId }) => {
         const room = rooms[roomId];
         if (room) {
-            const opponent = room.players.find((p) => p.socketId !== socket.id);
-            if (opponent) {
-                io.to(opponent.socketId).emit("opponentGuess", {
-                    guess: currentGuess,
-                    colors: getColors(currentGuess, targetWord),
+            room.guessHistory = [];
+            room.targetWord = getTargetWord();
+            room.startTime = Date.now();
+
+            // Notify all players to start fresh
+            room.players.forEach((p) => {
+                io.to(p.socketId).emit("startNewGame", {
+                    message: "New game started!",
                 });
-                if (currentGuess === targetWord) {
-                    io.to(opponent.socketId).emit("endGame", {
-                        winner: userId,
-                    });
-                }
+            });
+        }
+    });
+
+    // Leave room
+    socket.on("leaveRoom", ({ roomId, userId }) => {
+        const room = rooms[roomId];
+        if (room) {
+            // Remove user
+            room.players = room.players.filter((p) => p.id !== userId);
+
+            // Notify remaining players
+            room.players.forEach((p) => {
+                io.to(p.socketId).emit("playerLeft", { userId });
+            });
+
+            // Delete room if empty
+            if (room.players.length === 0) {
+                delete rooms[roomId];
+                emitRooms();
             }
         }
     });
 
-    // Delete a room
+    // Delete room (admin or special case)
     socket.on("deleteRoom", ({ roomId }) => {
         delete rooms[roomId];
         emitRooms();
@@ -254,16 +264,20 @@ io.on("connection", (socket) => {
     // Handle disconnect
     socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
-
-        // Remove this socket from all rooms
         for (const roomId in rooms) {
             const room = rooms[roomId];
-            // Filter out the disconnected socket
+
+            // Remove socket from room
             room.players = room.players.filter((p) => p.socketId !== socket.id);
 
-            // If room has no players left, delete it
+            // If no players left, delete room
             if (room.players.length === 0) {
                 delete rooms[roomId];
+            } else {
+                // Notify remaining players
+                room.players.forEach((p) => {
+                    io.to(p.socketId).emit("playerLeft", { userId: p.id });
+                });
             }
         }
         emitRooms();

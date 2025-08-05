@@ -1,0 +1,95 @@
+/* WaitingLobby.css */
+
+.lobby-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    font-family: "Arial", sans-serif;
+    text-align: center;
+}
+
+.lobby-title {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.create-room-btn {
+    background-color: #4caf50;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-bottom: 30px;
+}
+
+.create-room-btn:hover {
+    background-color: #45a049;
+}
+
+.no-rooms {
+    font-size: 1.2em;
+    color: #666;
+    margin-top: 40px;
+}
+
+.room-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+/* Card style for each room */
+.room-card {
+    background: #fff;
+    padding: 20px;
+    width: 250px;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.room-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Room info styling */
+.room-info {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.room-id {
+    font-size: 1.2em;
+    margin-bottom: 8px;
+    color: #222;
+}
+
+.host-name {
+    font-size: 1em;
+    color: #555;
+}
+
+/* Join button style */
+.join-btn {
+    background-color: #2196f3;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.join-btn:hover {
+    background-color: #0b7dda;
+}

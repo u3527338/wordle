@@ -21,10 +21,10 @@ const FormModal = ({
             onClose={handleClose}
             sx={{
                 "& .MuiDialog-paper": {
-                    minWidth: "100%",
                     backgroundColor: "rgba(25,25,25,0.7)",
                     marginTop: '96px',
-                    height: "85%",
+                    width: "50%",
+                    height: "50%",
                     ...parentSx,
                 },
                 display: "flex",

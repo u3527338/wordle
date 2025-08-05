@@ -1,5 +1,4 @@
 import axios from "axios";
-import AWS from "aws-sdk";
 
 // const API = "https://sgk-online-api.vercel.app";
 const API = "http://localhost:4000";
@@ -27,15 +26,6 @@ export const getUser = async (userId) => {
     if (!userId) return null;
     try {
         const response = await axios.get(`${API}/user/${userId}`);
-        return response.data;
-    } catch (error) {
-        return error.response.data;
-    }
-};
-
-export const runGuess = async (data) => {
-    try {
-        const response = await axios.post(`${API}/guess`, data);
         return response.data;
     } catch (error) {
         return error.response.data;

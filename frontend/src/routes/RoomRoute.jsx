@@ -1,11 +1,11 @@
 import React from "react";
 import Wrapper from "../components/general/Wrapper";
-import MultiplayerRoom from "../components/MultiplayerRoom";
+import GameRoom from "../components/GameRoom";
 
 export const RoomRoute = () => {
     return (
         <Wrapper>
-            <MultiplayerRoom />
+            <GameRoom />
         </Wrapper>
     );
 };

@@ -1,11 +1,11 @@
 import React from "react";
 import Wrapper from "../components/general/Wrapper";
-import WaitingRoom from "../components/WaitingRoom";
+import WaitingLobby from "../components/WaitingLobby";
 
 export const RoomsRoute = () => {
     return (
         <Wrapper>
-            <WaitingRoom />
+            <WaitingLobby />
         </Wrapper>
     );
 };

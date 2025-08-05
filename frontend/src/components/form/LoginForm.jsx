@@ -1,9 +1,6 @@
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Checkbox from "@mui/material/Checkbox";
-import FormControlLabel from "@mui/material/FormControlLabel";
 import Grid from "@mui/material/Grid";
-import Link from "@mui/material/Link";
 import TextField from "@mui/material/TextField";
 import { useState } from "react";
 // import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -22,7 +19,7 @@ export const LoginForm = () => {
     const navigate = useNavigate();
     const [isRegister, setIsRegister] = useState(false);
     const setUserId = useStore((state) => state.setUserId);
-    const { showToast } = useToastContext()
+    const { showToast } = useToastContext();
 
     const onSignIn = (data) => {
         mutateLogin(data, {
@@ -32,7 +29,7 @@ export const LoginForm = () => {
                     setUserId(res.data[0]._id);
                     navigate("/my-squads");
                 }
-            }
+            },
         });
     };
 
@@ -107,10 +104,7 @@ export const LoginForm = () => {
                     </Button>
                     <Grid container>
                         <Grid item xs={12}>
-                            <Button
-                                onClick={handleRegisterMode}
-                                variant="text"
-                            >
+                            <Button onClick={handleRegisterMode} variant="text">
                                 {isRegister ? "已有帳戶" : "註冊新帳戶"}
                             </Button>
                         </Grid>

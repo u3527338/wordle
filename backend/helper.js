@@ -1,20 +1,34 @@
-export const createNewData = async ({ model, data, type, res }) => {
-    return await model
-        .create(data)
-        .then((result) => {
-            res.status(201).send({
-                status: "success",
-                message: `${type} Created Successfully`,
-            });
-        })
-        .catch((error) => {
-            console.log(error)
-            res.status(500).send({
-                status: "failed",
-                message:
-                    error.errorResponse.code === 11000
-                        ? `${type} already exists`
-                        : `Error creating ${type}`,
-            });
-        });
+import wordleData from "./wordle.json" assert { type: "json" };
+
+export const getTargetWord = () => {
+    const words = wordleData.words;
+    const randomIndex = Math.floor(Math.random() * words.length);
+    console.log({ targetWord: words[randomIndex] });
+    return words[randomIndex];
+};
+
+export const getColors = (guess, target) => {
+    const guessLetters = guess.split("");
+    const targetLetters = target.split("");
+    const result = Array(5).fill("gray");
+
+    // First pass: correct position
+    for (let i = 0; i < 5; i++) {
+        if (guessLetters[i] === targetLetters[i]) {
+            result[i] = "green";
+            targetLetters[i] = null; // mark used
+        }
+    }
+
+    // Second pass: wrong position
+    for (let i = 0; i < 5; i++) {
+        if (result[i] !== "green") {
+            const index = targetLetters.indexOf(guessLetters[i]);
+            if (index !== -1) {
+                result[i] = "yellow";
+                targetLetters[index] = null; // mark as used
+            }
+        }
+    }
+    return result;
 };

@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getUser, login, registerNewUser, runGuess } from "../api";
+import { getUser, login, registerNewUser } from "../api";
 
 /* auth */
 const useRegisterMutation = () => {
@@ -26,17 +26,4 @@ const useUserQuery = (user_id) => {
     return query;
 };
 
-const useGuessMutation = () => {
-    const mutation = useMutation({
-        mutationFn: runGuess,
-        mutationKey: ["guess"],
-    });
-    return mutation;
-};
-
-export {
-    useGuessMutation, useLoginMutation,
-    useRegisterMutation,
-    useUserQuery
-};
-
+export { useLoginMutation, useRegisterMutation, useUserQuery };
