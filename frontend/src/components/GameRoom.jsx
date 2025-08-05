@@ -5,6 +5,7 @@ import { useStore } from "../hook/useStore";
 import socket from "../socket";
 import WordleGrid from "./card/WordleGrid";
 import Wrapper from "./general/Wrapper";
+import { WORDLE_TRIALS } from "../constants/constants";
 
 const GameRoom = ({ isSinglePlayer }) => {
     const { roomId } = useParams();
@@ -62,16 +63,24 @@ const GameRoom = ({ isSinglePlayer }) => {
                 case "validGuess":
                     setGuesses((prev) => [...prev, props]);
                     setCurrentGuess("");
+                    if (
+                        props.index === WORDLE_TRIALS &&
+                        props.answer !== props.guess
+                    ) {
+                        if (isSinglePlayer) {
+                            setGameStatus("end");
+                            setMessage(`The answer is ${props.answer}`);
+                        } else {
+                        }
+                    }
                     return;
                 case "validAssignment":
                     setGameStatus("assigned");
                     return;
                 case "unknown":
-                    console.log("unknown");
                     navigate("/wordle");
                     return;
                 default:
-                    console.log("default");
                     navigate("/wordle");
                     return;
             }
@@ -150,7 +159,6 @@ const GameRoom = ({ isSinglePlayer }) => {
         setOpponentGuesses([]);
         setCurrentGuess("");
         setMessage(null);
-        console.log("leave");
         navigate("/wordle");
     };
 

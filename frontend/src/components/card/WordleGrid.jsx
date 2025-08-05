@@ -1,3 +1,4 @@
+import { WORDLE_TRIALS } from "../../constants/constants";
 import "../../styles/Wordle.css";
 
 const LetterCell = ({ letter, color, style, animate, shake }) => {
@@ -18,8 +19,7 @@ const LetterCell = ({ letter, color, style, animate, shake }) => {
 };
 
 const WordleGrid = ({ guesses, currentGuess = "", shakeRow }) => {
-    const totalRows = 5; // fixed number of rows
-    const rows = Array.from({ length: totalRows }, (_, i) => i);
+    const rows = Array.from({ length: WORDLE_TRIALS }, (_, i) => i);
 
     return (
         <div style={{ width: "min-content", margin: "auto" }}>

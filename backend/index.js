@@ -141,11 +141,10 @@ const resetGameStatus = (room) => {
         room.players.forEach((p) => (p.targetWord = null));
     }
     io.emit("resetGameStatus");
-    startNewGame(room, 5);
+    startNewGame(room);
 };
 
-const startNewGame = (room, index) => {
-    console.log({ index });
+const startNewGame = (room) => {
     // If custom mode and answers are not yet assigned
     if (room.mode === "custom") {
         const allHaveAnswers = room.players.every((p) => p.targetWord);
@@ -208,14 +207,13 @@ io.on("connection", (socket) => {
         };
         emitRooms();
         if (isSinglePlayer && rooms[roomId].players?.length === 1) {
-            startNewGame(rooms[roomId], 1);
+            startNewGame(rooms[roomId]);
         }
     });
 
     // Join an existing room
     socket.on("joinRoom", ({ roomId, player }) => {
         const room = rooms[roomId];
-        console.log(room);
         if (!room || room.players.length >= 2) {
             socket.emit("status", { type: "exceed" });
             return;
@@ -225,10 +223,9 @@ io.on("connection", (socket) => {
         if (!room.players.find((p) => p.id === player.id))
             room.players.push({ id: player.id, socketId: socket.id });
         emitRooms();
-
         // When second player joins, start game and handle custom question exchange
         if (room.players?.length === 2) {
-            startNewGame(room, 2);
+            startNewGame(room);
         }
     });
 
@@ -258,14 +255,14 @@ io.on("connection", (socket) => {
         const allAnswered = room.players.every((p) => p.targetWord);
 
         if (allAnswered) {
-            startNewGame(room, 3);
+            startNewGame(room);
         }
     });
 
     // Handle guesses
     socket.on("submitGuess", ({ roomId, userId, currentGuess, guesses }) => {
         const room = rooms[roomId];
-        console.log({ room });
+
         if (!room || !room.players) return;
 
         const player = room.players.find((p) => p.id === userId);
@@ -291,7 +288,15 @@ io.on("connection", (socket) => {
 
         // Feedback to self
         // io.to(socket.id).emit("selfGuess", { guess, colors });
-        socket.emit("status", { type: "validGuess", props: { guess, colors } });
+        socket.emit("status", {
+            type: "validGuess",
+            props: {
+                guess,
+                colors,
+                index: guesses.length + 1,
+                answer: player.targetWord,
+            },
+        });
 
         // Feedback to opponent
         if (room.players.length > 1) {

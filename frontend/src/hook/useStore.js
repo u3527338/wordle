@@ -6,7 +6,7 @@ export const useStore = create(
     persist(
         (set, get) => ({
             userId: null,
-            currentTab: MENU['my-squads'],
+            currentTab: MENU['wordle'],
             data_retrieved: false,
             data: { skills: [], books: [], characters: [] },
             setUserId: (id) => set((state) => ({ userId: id })),
