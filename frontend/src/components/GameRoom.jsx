@@ -12,6 +12,7 @@ const GameRoom = () => {
     const navigate = useNavigate();
 
     const [currentGuess, setCurrentGuess] = useState("");
+    const [shakeRow, setShakeRow] = useState(null);
     const [guesses, setGuesses] = useState([]);
     const [opponentGuesses, setOpponentGuesses] = useState([]);
     const [gameStatus, setGameStatus] = useState("waiting");
@@ -31,8 +32,6 @@ const GameRoom = () => {
     };
 
     const socketHandlers = {
-        selfGuess: ({ guess, colors }) =>
-            setGuesses((prev) => [...prev, { guess, colors }]),
         opponentGuess: ({ guess, colors }) =>
             setOpponentGuesses((prev) => [...prev, { guess, colors }]),
         startNewGame: () => {
@@ -53,9 +52,29 @@ const GameRoom = () => {
         playerLeft: ({ userId }) => {
             resetGameStatus();
         },
-        error: () => {
-            console.log("error");
-            navigate("/rooms");
+        status: ({ type, props }) => {
+            switch (type) {
+                case "invalidGuess":
+                    handleInvalidGuess(props.index);
+                    return;
+                case "invalidAssignment":
+                    return;
+                case "validGuess":
+                    setGuesses((prev) => [...prev, props]);
+                    setCurrentGuess("");
+                    return;
+                case "validAssignment":
+                    setGameStatus("assigned");
+                    return;
+                case "unknown":
+                    console.log("unknown")
+                    navigate("/rooms");
+                    return;
+                default:
+                    console.log("default")
+                    navigate("/rooms");
+                    return;
+            }
         },
     };
 
@@ -80,6 +99,11 @@ const GameRoom = () => {
         return () => deregisterSocketEvents(socketHandlers);
     }, []);
 
+    const handleInvalidGuess = (rowIndex) => {
+        setShakeRow(rowIndex);
+        setTimeout(() => setShakeRow(null), 500); // Reset after shake duration
+    };
+
     const handleOpenModal = (forPlayerId) => {
         setQuestionModalState({ open: true, forPlayerId, input: "" });
     };
@@ -96,23 +120,15 @@ const GameRoom = () => {
     };
 
     const handleAnswerSubmit = () => {
-        if (
-            questionModalState.input.length === 5 &&
-            /^[A-Za-z]+$/.test(questionModalState.input)
-        ) {
-            socket.emit("submitCustomQuestion", {
-                forPlayerId: questionModalState.forPlayerId,
-                customWord: questionModalState.input,
-            });
-            setGameStatus("assigned");
-        } else {
-            alert("Please enter a valid 5-letter word");
-        }
+        socket.emit("submitCustomQuestion", {
+            forPlayerId: questionModalState.forPlayerId,
+            customWord: questionModalState.input,
+        });
     };
 
     // Submit guess during game
     const handleSubmitGuess = () => {
-        socket.emit("submitGuess", { roomId, userId, currentGuess });
+        socket.emit("submitGuess", { roomId, userId, currentGuess, guesses });
     };
 
     // Handle Replay
@@ -132,7 +148,7 @@ const GameRoom = () => {
         setOpponentGuesses([]);
         setCurrentGuess("");
         setMessage(null);
-        console.log("leave");
+        console.log("leave")
         navigate("/rooms");
     };
 
@@ -143,7 +159,6 @@ const GameRoom = () => {
         if (e.key === "Enter") {
             if (currentGuess.length !== 5) return;
             handleSubmitGuess();
-            setCurrentGuess("");
         } else if (e.key === "Backspace") {
             setCurrentGuess((prev) => prev.slice(0, -1));
         } else if (/^[a-zA-Z]$/.test(e.key)) {
@@ -165,7 +180,11 @@ const GameRoom = () => {
         <Wrapper>
             <div style={{ display: "flex" }}>
                 <div style={{ padding: 20 }}>
-                    <WordleGrid guesses={guesses} currentGuess={currentGuess} />
+                    <WordleGrid
+                        guesses={guesses}
+                        currentGuess={currentGuess}
+                        shakeRow={shakeRow}
+                    />
                 </div>
                 <div style={{ padding: 20 }}>
                     <WordleGrid guesses={opponentGuesses} />

@@ -211,7 +211,7 @@ io.on("connection", (socket) => {
     socket.on("joinRoom", ({ roomId, player }) => {
         const room = rooms[roomId];
         if (!room || room.players.length >= 2) {
-            socket.emit("error", "Cannot join");
+            socket.emit("status", { type: "joinGame" });
             return;
         }
         socket.join(roomId);
@@ -230,11 +230,23 @@ io.on("connection", (socket) => {
         if (!roomId || !rooms[roomId]) return;
 
         const room = rooms[roomId];
+
+        if (
+            customWord.length !== 5 ||
+            !/^[A-Za-z]+$/.test(customWord) ||
+            !isValidWord(customWord) // your validation function
+        ) {
+            socket.emit("status", { type: "invalidAssignment" });
+            return;
+        }
+
         const player = room.players.find((p) => p.id === forPlayerId);
         if (player) {
             player.targetWord = customWord;
         }
         emitRooms();
+        socket.emit("status", { type: "validAssignment" });
+
         // Check if all players have set answers
         const allAnswered = room.players.every((p) => p.targetWord);
 
@@ -244,26 +256,34 @@ io.on("connection", (socket) => {
     });
 
     // Handle guesses
-    socket.on("submitGuess", ({ roomId, userId, currentGuess }) => {
+    socket.on("submitGuess", ({ roomId, userId, currentGuess, guesses }) => {
         const room = rooms[roomId];
         if (!room || !room.players) return;
 
         const player = room.players.find((p) => p.id === userId);
         if (!player || !player.targetWord) {
-            socket.emit("error", "Player target word not found");
+            socket.emit("status", { type: "unknown" });
             return;
         }
 
         const guess = currentGuess.toUpperCase();
-        if (guess.length !== 5 || !/^[A-Z]+$/.test(guess)) {
-            socket.emit("error", "Invalid guess");
+        if (
+            guess.length !== 5 ||
+            !/^[A-Z]+$/.test(guess) ||
+            !isValidWord(guess)
+        ) {
+            socket.emit("status", {
+                type: "invalidGuess",
+                props: { index: guesses.length },
+            });
             return;
         }
 
         const colors = getColors(guess, player.targetWord);
 
         // Feedback to self
-        io.to(socket.id).emit("selfGuess", { guess, colors });
+        // io.to(socket.id).emit("selfGuess", { guess, colors });
+        socket.emit("status", { type: "validGuess", props: { guess, colors } });
 
         // Feedback to opponent
         room.players.forEach((p) => {

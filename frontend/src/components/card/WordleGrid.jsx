@@ -1,7 +1,9 @@
 import "../../styles/Wordle.css";
 
-const LetterCell = ({ letter, color, style, animate }) => {
-    const className = `letter-cell ${animate ? "flip" : ""}`;
+const LetterCell = ({ letter, color, style, animate, shake }) => {
+    const className = `letter-cell ${animate ? "flip" : ""} ${
+        shake ? "shake" : ""
+    }`;
     return (
         <div
             style={{
@@ -15,7 +17,7 @@ const LetterCell = ({ letter, color, style, animate }) => {
     );
 };
 
-const WordleGrid = ({ guesses, currentGuess = "" }) => {
+const WordleGrid = ({ guesses, currentGuess = "", shakeRow }) => {
     const totalRows = 5; // fixed number of rows
     const rows = Array.from({ length: totalRows }, (_, i) => i);
 
@@ -54,6 +56,7 @@ const WordleGrid = ({ guesses, currentGuess = "" }) => {
                                             : undefined,
                                 }}
                                 animate={isGuessRow}
+                                shake={rowIdx === shakeRow}
                             />
                         ))}
                     </div>
