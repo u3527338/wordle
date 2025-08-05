@@ -57,7 +57,7 @@ app.post("/register", async (req, res) => {
                 .then((result) => {
                     res.status(201).send({
                         status: "success",
-                        message: "成功創建帳號",
+                        message: "Create Account Succeed",
                     });
                 })
                 .catch((error) => {
@@ -65,15 +65,15 @@ app.post("/register", async (req, res) => {
                         status: "failed",
                         message:
                             error.errorResponse.code === 11000
-                                ? "已存在用戶"
-                                : "創建帳號失敗",
+                                ? "User exist"
+                                : "Create Account Failed",
                     });
                 });
         })
         .catch((e) => {
             res.status(500).send({
                 status: "failed",
-                message: "儲存密碼出現錯誤",
+                message: "Create Account Failed",
             });
         });
 });
@@ -81,8 +81,8 @@ app.post("/register", async (req, res) => {
 app.post("/login", async (req, res) => {
     const { username, password: input_password } = req.body;
     const user = await UserModel.findOne({ username }).select("+password");
-    const validMessage = "登入成功";
-    const invalidMessage = "用戶名稱或密碼錯誤";
+    const validMessage = "Login succeed";
+    const invalidMessage = "Username or password incorrect";
     if (!user) {
         res.status(401).send({
             status: "failed",
@@ -121,7 +121,7 @@ app.get("/user/:userId", async (req, res) => {
     } catch (error) {
         res.status(500).json({
             status: "failed",
-            message: "獲取用戶權限失敗",
+            message: "Get User Info Failed",
         });
     }
 });
@@ -141,10 +141,11 @@ const resetGameStatus = (room) => {
         room.players.forEach((p) => (p.targetWord = null));
     }
     io.emit("resetGameStatus");
-    startNewGame(room);
+    startNewGame(room, 5);
 };
 
-const startNewGame = (room) => {
+const startNewGame = (room, index) => {
+    console.log({ index });
     // If custom mode and answers are not yet assigned
     if (room.mode === "custom") {
         const allHaveAnswers = room.players.every((p) => p.targetWord);
@@ -193,7 +194,7 @@ io.on("connection", (socket) => {
     });
 
     // Create a new room
-    socket.on("createRoom", ({ roomId, player, mode }) => {
+    socket.on("createRoom", ({ roomId, player, mode, isSinglePlayer }) => {
         console.log(
             `Create room ${roomId} for user ${player.id} with socket.id=${socket.id}`
         );
@@ -202,16 +203,21 @@ io.on("connection", (socket) => {
             hostName: player.id,
             players: [{ id: player.id, socketId: socket.id }],
             mode,
+            isSinglePlayer,
             startTime: null,
         };
         emitRooms();
+        if (isSinglePlayer && rooms[roomId].players?.length === 1) {
+            startNewGame(rooms[roomId], 1);
+        }
     });
 
     // Join an existing room
     socket.on("joinRoom", ({ roomId, player }) => {
         const room = rooms[roomId];
+        console.log(room);
         if (!room || room.players.length >= 2) {
-            socket.emit("status", { type: "joinGame" });
+            socket.emit("status", { type: "exceed" });
             return;
         }
         socket.join(roomId);
@@ -219,9 +225,10 @@ io.on("connection", (socket) => {
         if (!room.players.find((p) => p.id === player.id))
             room.players.push({ id: player.id, socketId: socket.id });
         emitRooms();
+
         // When second player joins, start game and handle custom question exchange
-        if (room.players.length === 2) {
-            startNewGame(room);
+        if (room.players?.length === 2) {
+            startNewGame(room, 2);
         }
     });
 
@@ -251,13 +258,14 @@ io.on("connection", (socket) => {
         const allAnswered = room.players.every((p) => p.targetWord);
 
         if (allAnswered) {
-            startNewGame(room);
+            startNewGame(room, 3);
         }
     });
 
     // Handle guesses
     socket.on("submitGuess", ({ roomId, userId, currentGuess, guesses }) => {
         const room = rooms[roomId];
+        console.log({ room });
         if (!room || !room.players) return;
 
         const player = room.players.find((p) => p.id === userId);
@@ -286,11 +294,13 @@ io.on("connection", (socket) => {
         socket.emit("status", { type: "validGuess", props: { guess, colors } });
 
         // Feedback to opponent
-        room.players.forEach((p) => {
-            if (p.id !== userId) {
-                io.to(p.socketId).emit("opponentGuess", { guess, colors });
-            }
-        });
+        if (room.players.length > 1) {
+            room.players.forEach((p) => {
+                if (p.id !== userId) {
+                    io.to(p.socketId).emit("opponentGuess", { guess, colors });
+                }
+            });
+        }
 
         // Win check
         if (guess === player.targetWord) {
@@ -302,10 +312,10 @@ io.on("connection", (socket) => {
 
     // Reset game
     socket.on("replayGame", ({ roomId }) => {
+        console.log("replay game");
         const room = rooms[roomId];
         if (room) {
             resetGameStatus(room);
-            startNewGame(room);
         }
     });
 
@@ -324,7 +334,9 @@ io.on("connection", (socket) => {
                 io.to(p.socketId).emit("playerLeft", { userId });
             });
 
-            room.hostName = room.players[0].id;
+            if (room.players?.length > 0) {
+                room.hostName = room.players[0].id;
+            }
 
             // Delete room if empty
             if (room.players.length === 0) {

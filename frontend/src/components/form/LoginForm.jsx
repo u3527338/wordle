@@ -61,12 +61,6 @@ export const LoginForm = () => {
                     backgroundColor: "rgb(255,255,255,0.7)",
                 }}
             >
-                {/* <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
-            <LockOutlinedIcon />
-            </Avatar> */}
-                <Typography component="h1" variant="h5">
-                    {isRegister ? "註冊" : "登錄"}
-                </Typography>
                 <Box
                     component="form"
                     onSubmit={handleSubmit(isRegister ? onRegister : onSignIn)}
@@ -77,7 +71,7 @@ export const LoginForm = () => {
                         required
                         fullWidth
                         id="username"
-                        label="用戶名稱"
+                        label="USERNAME"
                         name="username"
                         autoComplete="username"
                         autoFocus
@@ -88,7 +82,7 @@ export const LoginForm = () => {
                         required
                         fullWidth
                         name="password"
-                        label="密碼"
+                        label="PASSWORD"
                         type="password"
                         id="password"
                         autoComplete="current-password"
@@ -100,12 +94,12 @@ export const LoginForm = () => {
                         variant="contained"
                         sx={{ mt: 3, mb: 2 }}
                     >
-                        {isRegister ? "確認註冊" : "確認登錄"}
+                        {isRegister ? "REGISTER" : "LOGIN"}
                     </Button>
                     <Grid container>
                         <Grid item xs={12}>
                             <Button onClick={handleRegisterMode} variant="text">
-                                {isRegister ? "已有帳戶" : "註冊新帳戶"}
+                                {isRegister ? "ALREADY HAVE AN ACCOUNT?" : "REGISTER NEW ACCOUNT"}
                             </Button>
                         </Grid>
                     </Grid>

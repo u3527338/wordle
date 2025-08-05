@@ -57,49 +57,50 @@ const RoomTable = ({ rows, onJoin }) => {
                 </TableHead>
                 <TableBody>
                     {hasRecords ? (
-                        rows.map((row) => (
-                            <TableRow
-                                key={row.id}
-                                hover
-                                sx={{ borderRadius: 2 }}
-                            >
-                                <Cell value={row.id} />
-                                <Cell value={row.hostName} />
-                                <Cell
-                                    value={
-                                        row.mode === "server" ? (
-                                            <ComputerIcon />
-                                        ) : (
-                                            <GroupIcon />
-                                        )
-                                    }
-                                />
-                                <Cell value={`${row.players.length} / 2`} />
-                                <Cell
-                                    value={
-                                        row.players.length >= 2 ? (
-                                            <Typography>Full</Typography>
-                                        ) : (
-                                            <Button
-                                                variant="contained"
-                                                disabled={
-                                                    row.players.length >= 2
-                                                }
-                                                onClick={() => onJoin(row.id)}
-                                                sx={{
-                                                    padding: "6px 12px",
-                                                    borderRadius: "8px",
-                                                    fontWeight: "bold",
-                                                    backgroundColor: "#6aaa64",
-                                                }}
-                                            >
-                                                Join
-                                            </Button>
-                                        )
-                                    }
-                                />
-                            </TableRow>
-                        ))
+                        rows.map((row) => {
+                            const maxPlayer = row.isSinglePlayer ? 1 : 2;
+                            return (
+                                <TableRow key={row.id} sx={{ borderRadius: 2 }}>
+                                    <Cell value={row.id} />
+                                    <Cell value={row.hostName} />
+                                    <Cell
+                                        value={
+                                            row.mode === "server" ? (
+                                                <ComputerIcon />
+                                            ) : (
+                                                <GroupIcon />
+                                            )
+                                        }
+                                    />
+                                    <Cell
+                                        value={`${row.players.length} / ${maxPlayer}`}
+                                    />
+                                    <Cell
+                                        value={
+                                            row.players.length >= maxPlayer ? (
+                                                <Typography>Full</Typography>
+                                            ) : (
+                                                <Button
+                                                    variant="contained"
+                                                    onClick={() =>
+                                                        onJoin(row.id)
+                                                    }
+                                                    sx={{
+                                                        padding: "6px 12px",
+                                                        borderRadius: "8px",
+                                                        fontWeight: "bold",
+                                                        backgroundColor:
+                                                            "#6aaa64",
+                                                    }}
+                                                >
+                                                    Join
+                                                </Button>
+                                            )
+                                        }
+                                    />
+                                </TableRow>
+                            );
+                        })
                     ) : (
                         <TableRow>
                             <TableCell
@@ -136,19 +137,20 @@ const WaitingLobby = () => {
         };
     }, []);
 
-    const handleCreateRoom = () => {
+    const handleCreateRoom = (isSinglePlayer) => {
         const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
         const data = {
             roomId,
             player: { id: userId, isHost: true },
             mode,
+            isSinglePlayer,
         };
         socket.emit("createRoom", data);
-        navigate(`/rooms/${roomId}`);
+        navigate(`/wordle/${roomId}`, { state: { isSinglePlayer } });
     };
 
     const handleJoinRoom = (roomId) => {
-        navigate(`/rooms/${roomId}`);
+        navigate(`/wordle/${roomId}`);
     };
 
     const handleChange = (event, mode) => {
@@ -165,6 +167,7 @@ const WaitingLobby = () => {
         id: room.id,
         hostName: room.hostName || "Host",
         mode: room.mode,
+        isSinglePlayer: room.isSinglePlayer,
         players: room.players,
     }));
 
@@ -196,8 +199,17 @@ const WaitingLobby = () => {
                 </ToggleButtonGroup>
             </div>
             <div className="mode-selection">
-                <button className="create-room-btn" onClick={handleCreateRoom}>
-                    Create New Room
+                <button
+                    className="create-room-btn"
+                    onClick={() => handleCreateRoom(true)}
+                >
+                    Single Player
+                </button>
+                <button
+                    className="create-room-btn"
+                    onClick={() => handleCreateRoom(false)}
+                >
+                    Two Players
                 </button>
             </div>
             <RoomTable rows={rows} onJoin={handleJoinRoom} />

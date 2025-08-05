@@ -6,7 +6,7 @@ import socket from "../socket";
 import WordleGrid from "./card/WordleGrid";
 import Wrapper from "./general/Wrapper";
 
-const GameRoom = () => {
+const GameRoom = ({ isSinglePlayer }) => {
     const { roomId } = useParams();
     const { userId } = useStore();
     const navigate = useNavigate();
@@ -67,12 +67,12 @@ const GameRoom = () => {
                     setGameStatus("assigned");
                     return;
                 case "unknown":
-                    console.log("unknown")
-                    navigate("/rooms");
+                    console.log("unknown");
+                    navigate("/wordle");
                     return;
                 default:
-                    console.log("default")
-                    navigate("/rooms");
+                    console.log("default");
+                    navigate("/wordle");
                     return;
             }
         },
@@ -91,10 +91,12 @@ const GameRoom = () => {
     };
 
     useEffect(() => {
-        socket.emit("joinRoom", {
-            roomId,
-            player: { id: userId, isHost: false },
-        });
+        if (!isSinglePlayer) {
+            socket.emit("joinRoom", {
+                roomId,
+                player: { id: userId, isHost: false },
+            });
+        }
         registerSocketEvents(socketHandlers);
         return () => deregisterSocketEvents(socketHandlers);
     }, []);
@@ -148,8 +150,8 @@ const GameRoom = () => {
         setOpponentGuesses([]);
         setCurrentGuess("");
         setMessage(null);
-        console.log("leave")
-        navigate("/rooms");
+        console.log("leave");
+        navigate("/wordle");
     };
 
     // Handle keyboard input
@@ -178,18 +180,26 @@ const GameRoom = () => {
 
     return (
         <Wrapper>
-            <div style={{ display: "flex" }}>
-                <div style={{ padding: 20 }}>
-                    <WordleGrid
-                        guesses={guesses}
-                        currentGuess={currentGuess}
-                        shakeRow={shakeRow}
-                    />
+            {isSinglePlayer ? (
+                <WordleGrid
+                    guesses={guesses}
+                    currentGuess={currentGuess}
+                    shakeRow={shakeRow}
+                />
+            ) : (
+                <div style={{ display: "flex" }}>
+                    <div style={{ padding: 20 }}>
+                        <WordleGrid
+                            guesses={guesses}
+                            currentGuess={currentGuess}
+                            shakeRow={shakeRow}
+                        />
+                    </div>
+                    <div style={{ padding: 20 }}>
+                        <WordleGrid guesses={opponentGuesses} />
+                    </div>
                 </div>
-                <div style={{ padding: 20 }}>
-                    <WordleGrid guesses={opponentGuesses} />
-                </div>
-            </div>
+            )}
 
             <FormModal open={gameStatus === "waiting"}>
                 <span>Waiting for others to join...</span>

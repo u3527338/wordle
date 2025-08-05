@@ -54,8 +54,7 @@
     transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
     box-shadow: 0 0 10px #6aaa64, inset 0 0 5px #6aaa64;
 }
+
 .button:hover {
-    background-color: #558b46; /* darker green for hover */
-    box-shadow: 0 0 15px #558b46, inset 0 0 8px #558b46;
     transform: scale(1.02);
 }
