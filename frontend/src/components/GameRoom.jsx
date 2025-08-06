@@ -50,14 +50,26 @@ const GameRoom = ({ isSinglePlayer }) => {
             setGameStatus("assigning");
             handleOpenModal(forPlayerId);
         },
-        endGame: ({ winner }) => {
+        endGame: ({ answer, winner, mode }) => {
+            if (!winner) {
+                if (mode === "singlePlayer") {
+                    setMessage(`Your answer is ${answer}`);
+                } else {
+                    setMessage(`No one wins. Your answer is ${answer}`);
+                }
+            } else if (winner === userId) {
+                setMessage(`Congratulations!`);
+            } else {
+                setMessage(`Your opponent wins the game`);
+            }
             setGameStatus("end");
-            setMessage(`Winner: ${winner}`);
         },
         resetGameStatus: () => {
+            console.log("resetgame")
             resetGameStatus();
         },
         playerLeft: ({ userId }) => {
+            console.log("player left")
             resetGameStatus();
         },
         status: ({ type, props }) => {
@@ -70,19 +82,12 @@ const GameRoom = ({ isSinglePlayer }) => {
                 case "validGuess":
                     setGuesses((prev) => [...prev, props]);
                     setCurrentGuess("");
-                    if (
-                        props.index === WORDLE_TRIALS &&
-                        props.answer !== props.guess
-                    ) {
-                        if (isSinglePlayer) {
-                            setGameStatus("end");
-                            setMessage(`The answer is ${props.answer}`);
-                        } else {
-                        }
-                    }
                     return;
                 case "validAssignment":
                     setGameStatus("assigned");
+                    return;
+                case "waitForOpponent":
+                    setMessage(`Your answer is ${props.answer}`);
                     return;
                 case "unknown":
                     navigate("/wordle");
@@ -155,6 +160,7 @@ const GameRoom = ({ isSinglePlayer }) => {
 
     // Handle Replay
     const handleReplay = () => {
+        console.log("replay")
         socket.emit("replayGame", { roomId });
         setGuesses([]);
         setOpponentGuesses([]);

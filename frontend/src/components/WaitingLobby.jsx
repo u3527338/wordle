@@ -66,7 +66,7 @@ const RoomTable = ({ rows, onJoin }) => {
                                     <Cell value={row.hostName} />
                                     <Cell
                                         value={
-                                            row.mode === "server" ? (
+                                            row.mode === "twoPlayerServer" ? (
                                                 <ComputerIcon />
                                             ) : (
                                                 <GroupIcon />
