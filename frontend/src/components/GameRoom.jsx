@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import FormModal from "../components/modal/FormModal";
-import { WORDLE_TRIALS } from "../constants/constants";
 import { useStore } from "../hook/useStore";
 import socket from "../socket";
 import WordleGrid from "./card/WordleGrid";
-import Wrapper from "./general/Wrapper";
+import MyButton from "./common/MyButton";
 
 const GameRoom = ({ isSinglePlayer }) => {
     const { roomId } = useParams();
@@ -65,11 +64,9 @@ const GameRoom = ({ isSinglePlayer }) => {
             setGameStatus("end");
         },
         resetGameStatus: () => {
-            console.log("resetgame")
             resetGameStatus();
         },
         playerLeft: ({ userId }) => {
-            console.log("player left")
             resetGameStatus();
         },
         status: ({ type, props }) => {
@@ -87,6 +84,7 @@ const GameRoom = ({ isSinglePlayer }) => {
                     setGameStatus("assigned");
                     return;
                 case "waitForOpponent":
+                    setGameStatus("pending");
                     setMessage(`Your answer is ${props.answer}`);
                     return;
                 case "unknown":
@@ -160,7 +158,6 @@ const GameRoom = ({ isSinglePlayer }) => {
 
     // Handle Replay
     const handleReplay = () => {
-        console.log("replay")
         socket.emit("replayGame", { roomId });
         setGuesses([]);
         setOpponentGuesses([]);
@@ -204,7 +201,7 @@ const GameRoom = ({ isSinglePlayer }) => {
     }, [gameStatus, currentGuess, guesses]);
 
     return (
-        <Wrapper>
+        <>
             {isSinglePlayer ? (
                 <WordleGrid
                     guesses={guesses}
@@ -212,7 +209,9 @@ const GameRoom = ({ isSinglePlayer }) => {
                     shakeRow={shakeRow}
                 />
             ) : (
-                <div style={{ display: "flex" }}>
+                <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                >
                     <div style={{ padding: 20 }}>
                         <WordleGrid
                             guesses={guesses}
@@ -270,12 +269,7 @@ const GameRoom = ({ isSinglePlayer }) => {
                                 }
                                 maxLength={5}
                             />
-                            <button
-                                className="button"
-                                onClick={handleAnswerSubmit}
-                            >
-                                Submit
-                            </button>
+                            <MyButton onClick={handleAnswerSubmit}>Submit</MyButton>
                         </div>
                     )}
                     {gameStatus === "assigned" && (
@@ -287,7 +281,7 @@ const GameRoom = ({ isSinglePlayer }) => {
             </FormModal>
 
             {/* End game modal */}
-            <FormModal open={gameStatus === "end"}>
+            <FormModal open={gameStatus === "end" || gameStatus === "pending"}>
                 <div
                     style={{
                         display: "flex",
@@ -296,33 +290,25 @@ const GameRoom = ({ isSinglePlayer }) => {
                         alignItems: "center",
                     }}
                 >
-                    <h3
-                        style={{
-                            fontSize: "20px",
-                            fontWeight: "bold",
-                            marginBottom: "10px",
-                        }}
-                    >
-                        Game Over!
-                    </h3>
                     {message && (
                         <p style={{ fontSize: "18px", marginBottom: "20px" }}>
                             {message}
                         </p>
                     )}
-                    <button className="button" onClick={handleReplay}>
-                        Replay
-                    </button>
-                    <button
-                        className="button"
-                        style={{ backgroundColor: "#f44336" }}
-                        onClick={handleLeave}
-                    >
-                        Leave
-                    </button>
+                    {gameStatus !== "pending" && (
+                        <div>
+                            <MyButton onClick={handleReplay}>Replay</MyButton>
+                            <MyButton color="#f44336" onClick={handleLeave}>
+                                Leave
+                            </MyButton>
+                        </div>
+                    )}
                 </div>
             </FormModal>
-        </Wrapper>
+            <MyButton onClick={handleLeave} color="#f44336">
+                Leave
+            </MyButton>
+        </>
     );
 };
 

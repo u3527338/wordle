@@ -3,11 +3,11 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { MainAppbar } from "./MainAppbar";
 import { MainContainer } from "./MainContainer";
 
-const Wrapper = ({ children }) => {
+const Wrapper = ({ children, showAppBar = true }) => {
     return (
         <Box sx={{ display: "flex" }}>
             <CssBaseline />
-            <MainAppbar />
+            {showAppBar && <MainAppbar />}
             <MainContainer children={children} />
         </Box>
     );

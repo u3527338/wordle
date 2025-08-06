@@ -1,7 +1,6 @@
 import ComputerIcon from "@mui/icons-material/Computer";
 import GroupIcon from "@mui/icons-material/Group";
 import {
-    Button,
     Paper,
     Table,
     TableBody,
@@ -19,6 +18,7 @@ import { useStore } from "../hook/useStore";
 import { useCreateRoomMutation, useJoinRoomMutation } from "../request/hook";
 import socket from "../socket";
 import "../styles/WaitingLobby.css";
+import MyButton from "./common/MyButton";
 
 const RoomTable = ({ rows, onJoin }) => {
     const hasRecords = rows && rows.length > 0;
@@ -81,21 +81,13 @@ const RoomTable = ({ rows, onJoin }) => {
                                             row.players.length >= maxPlayer ? (
                                                 <Typography>Full</Typography>
                                             ) : (
-                                                <Button
-                                                    variant="contained"
+                                                <MyButton
                                                     onClick={() =>
                                                         onJoin(row.id)
                                                     }
-                                                    sx={{
-                                                        padding: "6px 12px",
-                                                        borderRadius: "8px",
-                                                        fontWeight: "bold",
-                                                        backgroundColor:
-                                                            "#6aaa64",
-                                                    }}
                                                 >
                                                     Join
-                                                </Button>
+                                                </MyButton>
                                             )
                                         }
                                     />
@@ -224,18 +216,12 @@ const WaitingLobby = () => {
                 </ToggleButtonGroup>
             </div>
             <div className="mode-selection">
-                <button
-                    className="create-room-btn"
-                    onClick={() => handleCreateRoom(true)}
-                >
+                <MyButton onClick={() => handleCreateRoom(true)}>
                     Single Player
-                </button>
-                <button
-                    className="create-room-btn"
-                    onClick={() => handleCreateRoom(false)}
-                >
-                    Two Players
-                </button>
+                </MyButton>
+                <MyButton onClick={() => handleCreateRoom(false)}>
+                    Multi Player
+                </MyButton>
             </div>
             <RoomTable rows={rows} onJoin={handleJoinRoom} />
         </div>

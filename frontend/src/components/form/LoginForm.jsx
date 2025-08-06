@@ -1,16 +1,14 @@
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
+import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import TextField from "@mui/material/TextField";
 import { useState } from "react";
-// import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import Container from "@mui/material/Container";
-import Typography from "@mui/material/Typography";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../../hook/useStore";
 import { useLoginMutation, useRegisterMutation } from "../../request/hook";
 import { useToastContext } from "../provider/ToastProvider";
+import MyButton from "../common/MyButton";
 
 export const LoginForm = () => {
     const { mutate: mutateRegister } = useRegisterMutation();
@@ -105,21 +103,19 @@ export const LoginForm = () => {
                         autoComplete="current-password"
                         {...register("password")}
                     />
-                    <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        sx={{ mt: 3, mb: 2 }}
-                    >
+                    <MyButton type="submit" style={{ width: "100%" }}>
                         {isRegister ? "REGISTER" : "LOGIN"}
-                    </Button>
+                    </MyButton>
                     <Grid container>
                         <Grid item xs={12}>
-                            <Button onClick={handleRegisterMode} variant="text">
+                            <MyButton
+                                onClick={handleRegisterMode}
+                                className="variant"
+                            >
                                 {isRegister
                                     ? "ALREADY HAVE AN ACCOUNT?"
                                     : "REGISTER NEW ACCOUNT"}
-                            </Button>
+                            </MyButton>
                         </Grid>
                     </Grid>
                 </Box>

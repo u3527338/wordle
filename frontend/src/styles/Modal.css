@@ -40,21 +40,3 @@
         box-shadow: 0 0 20px #6aaa64, inset 0 0 10px #6aaa64;
     }
 }
-
-/* Button styles with Wordle green and glow */
-.button {
-    background-color: #6aaa64; /* Wordle green */
-    color: #fff;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
-    box-shadow: 0 0 10px #6aaa64, inset 0 0 5px #6aaa64;
-}
-
-.button:hover {
-    transform: scale(1.02);
-}

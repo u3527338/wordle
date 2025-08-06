@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import GameRoomModel from "./db/gameRoomModel.js";
 import PlayerModel from "./db/playerModel.js";
 import {
+    findRoomIdByPlayerId,
     getColors,
     getTargetWord,
     isValidWord,
@@ -304,7 +305,6 @@ io.on("connection", (socket) => {
             startTime: null,
         };
         emitRooms();
-        console.log({ rooms });
         if (isSinglePlayer && rooms[roomId].players.length === 1) {
             startNewGame(rooms[roomId]);
         }
@@ -460,7 +460,10 @@ io.on("connection", (socket) => {
                             type: "waitForOpponent",
                             props: { answer: player.targetWord },
                         });
+                        console.log("waitforopponent");
                     } else {
+                        console.log("test1");
+
                         socket.emit("endGame", {
                             mode: room.mode,
                             answer: player.targetWord,
@@ -502,20 +505,22 @@ io.on("connection", (socket) => {
     // Handle disconnect
     socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
-        console.log({ rooms });
-        for (const roomId in rooms) {
-            const room = rooms[roomId];
-            if (room) {
-                // Remove socket from players
-                room.players = room.players.filter(
-                    (p) => p.socketId !== socket.id
-                );
-                // Remove room if empty
-                if (room.players.length === 0) {
-                    delete rooms[roomId];
-                }
-                emitRooms();
+        const roomId = findRoomIdByPlayerId(rooms, socket.id);
+        const room = rooms[roomId];
+        if (room) {
+            // Remove socket from players
+            room.players = room.players.filter((p) => p.socketId !== socket.id);
+
+            // // Notify remaining players
+            room.players.forEach((p) => {
+                io.to(p.socketId).emit("playerLeft", { userId: p.id });
+            });
+
+            // Remove room if empty
+            if (room.players.length === 0) {
+                delete rooms[roomId];
             }
+            emitRooms();
         }
     });
 });

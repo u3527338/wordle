@@ -28,23 +28,6 @@
     font-weight: bold;
 }
 
-/* Buttons, primary (green) */
-button {
-    background-color: #6aaa64; /* Wordle green */
-    color: #fff;
-    font-weight: bold;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 12px;
-    cursor: pointer;
-    transition: background-color 0.3s, box-shadow 0.3s;
-}
-
-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
 /* Feedback colors for tiles or statuses, example for inline style or class */
 .correct {
     background-color: #6aaa64; /* Wordle green */

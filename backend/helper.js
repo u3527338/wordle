@@ -2,6 +2,16 @@ import GameHistoryModel from "./db/gameHistoryModel.js";
 import PlayerModel from "./db/playerModel.js";
 import wordleData from "./wordle.json" assert { type: "json" };
 
+export const findRoomIdByPlayerId = (rooms, id) => {
+    for (const roomId in rooms) {
+        const room = rooms[roomId];
+        if (room.players.some((p) => p.socketId === id)) {
+            return roomId;
+        }
+    }
+    return null;
+};
+
 export const updateGameInfo = async ({
     gameId,
     userId,

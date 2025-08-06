@@ -7,7 +7,7 @@ export const RoomRoute = () => {
     const location = useLocation();
     const { isSinglePlayer } = location.state || {};
     return (
-        <Wrapper>
+        <Wrapper showAppBar={false}>
             <GameRoom isSinglePlayer={isSinglePlayer}/>
         </Wrapper>
     );
