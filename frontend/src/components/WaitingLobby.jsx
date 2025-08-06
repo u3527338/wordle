@@ -1,5 +1,6 @@
 import ComputerIcon from "@mui/icons-material/Computer";
-import GroupIcon from "@mui/icons-material/Group";
+import PeopleIcon from "@mui/icons-material/People";
+import PersonIcon from "@mui/icons-material/Person";
 import {
     Paper,
     Table,
@@ -19,6 +20,12 @@ import { useCreateRoomMutation, useJoinRoomMutation } from "../request/hook";
 import socket from "../socket";
 import "../styles/WaitingLobby.css";
 import MyButton from "./common/MyButton";
+
+const modes = {
+    singlePlayer: <PersonIcon />,
+    twoPlayerServer: <ComputerIcon />,
+    twoPlayerCustom: <PeopleIcon />,
+};
 
 const RoomTable = ({ rows, onJoin }) => {
     const hasRecords = rows && rows.length > 0;
@@ -64,15 +71,7 @@ const RoomTable = ({ rows, onJoin }) => {
                                 <TableRow key={row.id} sx={{ borderRadius: 2 }}>
                                     <Cell value={row.id} />
                                     <Cell value={row.hostName} />
-                                    <Cell
-                                        value={
-                                            row.mode === "twoPlayerServer" ? (
-                                                <ComputerIcon />
-                                            ) : (
-                                                <GroupIcon />
-                                            )
-                                        }
-                                    />
+                                    <Cell value={modes[row.mode]} />
                                     <Cell
                                         value={`${row.players.length} / ${maxPlayer}`}
                                     />
@@ -118,7 +117,7 @@ const WaitingLobby = () => {
     const navigate = useNavigate();
     const { user } = useStore();
     const { userId, nickName } = user;
-    const [multiPlayerMode, setMultiPlayerMode] = useState("twoPlayerServer");
+    const [gameMode, setGameMode] = useState("singlePlayer");
     const { mutate: mutateCreateRoom } = useCreateRoomMutation();
     const { mutate: mutateJoinRoom } = useJoinRoomMutation();
 
@@ -133,10 +132,10 @@ const WaitingLobby = () => {
         };
     }, []);
 
-    const handleCreateRoom = (isSinglePlayer) => {
-        const mode = isSinglePlayer ? "singlePlayer" : multiPlayerMode;
+    const handleCreateRoom = () => {
+        const isSinglePlayer = gameMode === "singlePlayer";
         const player = { id: userId, name: nickName };
-        const data = { player, mode };
+        const data = { player, mode: gameMode };
         mutateCreateRoom(data, {
             onSuccess: (data) => {
                 const status = data.status;
@@ -145,7 +144,7 @@ const WaitingLobby = () => {
                     socket.emit("createRoom", {
                         roomId,
                         player: { id: userId, name: nickName },
-                        mode,
+                        mode: gameMode,
                     });
                     navigate(`/wordle/${roomId}`, {
                         state: { isSinglePlayer, isAuth: true },
@@ -171,11 +170,11 @@ const WaitingLobby = () => {
     };
 
     const handleChange = (event, mode) => {
-        setMultiPlayerMode(mode);
+        setGameMode(mode);
     };
 
     const control = {
-        value: multiPlayerMode,
+        value: gameMode,
         onChange: handleChange,
         exclusive: true,
     };
@@ -196,32 +195,19 @@ const WaitingLobby = () => {
                     {...control}
                     aria-label="Small sizes"
                 >
-                    [
-                    <ToggleButton
-                        disabled={multiPlayerMode === "twoPlayerServer"}
-                        value="twoPlayerServer"
-                        key="twoPlayerServer"
-                    >
-                        <ComputerIcon />
-                    </ToggleButton>
-                    ,
-                    <ToggleButton
-                        disabled={multiPlayerMode === "twoPlayerCustom"}
-                        value="twoPlayerCustom"
-                        key="twoPlayerCustom"
-                    >
-                        <GroupIcon />
-                    </ToggleButton>
-                    ]
+                    {Object.entries(modes).map(([key, value]) => (
+                        <ToggleButton
+                            disabled={gameMode === key}
+                            value={key}
+                            key={key}
+                        >
+                            {value}
+                        </ToggleButton>
+                    ))}
                 </ToggleButtonGroup>
             </div>
             <div className="mode-selection">
-                <MyButton onClick={() => handleCreateRoom(true)}>
-                    Single Player
-                </MyButton>
-                <MyButton onClick={() => handleCreateRoom(false)}>
-                    Multi Player
-                </MyButton>
+                <MyButton onClick={handleCreateRoom}>Create Room</MyButton>
             </div>
             <RoomTable rows={rows} onJoin={handleJoinRoom} />
         </div>

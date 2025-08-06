@@ -1,5 +1,5 @@
 const MENU = {
-    wordle: "Game",
+    wordle: "Game Lobby",
 };
 
 const WORDLE_TRIALS = 6;
