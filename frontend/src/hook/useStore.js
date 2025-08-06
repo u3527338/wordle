@@ -5,11 +5,11 @@ import { MENU } from "../constants/constants";
 export const useStore = create(
     persist(
         (set, get) => ({
-            userId: null,
-            currentTab: MENU['wordle'],
+            user: null,
+            currentTab: MENU["wordle"],
             data_retrieved: false,
             data: { skills: [], books: [], characters: [] },
-            setUserId: (id) => set((state) => ({ userId: id })),
+            setUser: (user) => set({ user }),
             setCurrentTab: (tab) => set((state) => ({ currentTab: tab })),
             setDataRetrieved: (done) =>
                 set((state) => ({ data_retrieved: done })),

@@ -18,7 +18,7 @@ export const LoginForm = () => {
     const { register, handleSubmit } = useForm();
     const navigate = useNavigate();
     const [isRegister, setIsRegister] = useState(false);
-    const setUserId = useStore((state) => state.setUserId);
+    const setUser = useStore((state) => state.setUser);
     const { showToast } = useToastContext();
 
     const onSignIn = (data) => {
@@ -26,8 +26,13 @@ export const LoginForm = () => {
             onSettled: (res) => {
                 showToast({ status: res.status, detail: res.message });
                 if (res.status === "success") {
-                    setUserId(res.data[0]._id);
-                    navigate("/my-squads");
+                    const user = res.data[0];
+                    setUser({
+                        userId: user?._id,
+                        nickName: user?.nickname,
+                        stats: user?.stats,
+                    });
+                    navigate("/wordle");
                 }
             },
         });
@@ -66,6 +71,19 @@ export const LoginForm = () => {
                     onSubmit={handleSubmit(isRegister ? onRegister : onSignIn)}
                     sx={{ mt: 1 }}
                 >
+                    {isRegister && (
+                        <TextField
+                            margin="normal"
+                            required
+                            fullWidth
+                            id="nickname"
+                            label="NICKNAME"
+                            name="nickname"
+                            autoComplete="nickname"
+                            autoFocus
+                            {...register("nickname")}
+                        />
+                    )}
                     <TextField
                         margin="normal"
                         required
@@ -74,7 +92,6 @@ export const LoginForm = () => {
                         label="USERNAME"
                         name="username"
                         autoComplete="username"
-                        autoFocus
                         {...register("username")}
                     />
                     <TextField
@@ -99,7 +116,9 @@ export const LoginForm = () => {
                     <Grid container>
                         <Grid item xs={12}>
                             <Button onClick={handleRegisterMode} variant="text">
-                                {isRegister ? "ALREADY HAVE AN ACCOUNT?" : "REGISTER NEW ACCOUNT"}
+                                {isRegister
+                                    ? "ALREADY HAVE AN ACCOUNT?"
+                                    : "REGISTER NEW ACCOUNT"}
                             </Button>
                         </Grid>
                     </Grid>

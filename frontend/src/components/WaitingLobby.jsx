@@ -16,6 +16,7 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../hook/useStore";
+import { useCreateRoomMutation, useJoinRoomMutation } from "../request/hook";
 import socket from "../socket";
 import "../styles/WaitingLobby.css";
 
@@ -123,8 +124,11 @@ const RoomTable = ({ rows, onJoin }) => {
 const WaitingLobby = () => {
     const [rooms, setRooms] = useState([]);
     const navigate = useNavigate();
-    const { userId } = useStore();
-    const [mode, setMode] = useState("server"); // 'server' or 'custom'
+    const { user } = useStore();
+    const { userId, nickName } = user;
+    const [multiPlayerMode, setMultiPlayerMode] = useState("twoPlayerServer");
+    const { mutate: mutateCreateRoom } = useCreateRoomMutation();
+    const { mutate: mutateJoinRoom } = useJoinRoomMutation();
 
     useEffect(() => {
         socket.emit("getRooms");
@@ -138,27 +142,48 @@ const WaitingLobby = () => {
     }, []);
 
     const handleCreateRoom = (isSinglePlayer) => {
-        const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-        const data = {
-            roomId,
-            player: { id: userId, isHost: true },
-            mode,
-            isSinglePlayer,
-        };
-        socket.emit("createRoom", data);
-        navigate(`/wordle/${roomId}`, { state: { isSinglePlayer } });
+        const mode = isSinglePlayer ? "singlePlayer" : multiPlayerMode;
+        const player = { id: userId, name: nickName };
+        const data = { player, mode };
+        mutateCreateRoom(data, {
+            onSuccess: (data) => {
+                const status = data.status;
+                const roomId = data.roomId;
+                if (status === "ok") {
+                    socket.emit("createRoom", {
+                        roomId,
+                        player: { id: userId, name: nickName },
+                        mode,
+                    });
+                    navigate(`/wordle/${roomId}`, {
+                        state: { isSinglePlayer, isAuth: true },
+                    });
+                } else {
+                }
+            },
+        });
     };
 
     const handleJoinRoom = (roomId) => {
-        navigate(`/wordle/${roomId}`);
+        const player = { id: userId, name: nickName };
+        const data = { player, roomId };
+        mutateJoinRoom(data, {
+            onSuccess: (data) => {
+                const status = data.status;
+                if (status === "ok") {
+                    navigate(`/wordle/${roomId}`);
+                } else {
+                }
+            },
+        });
     };
 
     const handleChange = (event, mode) => {
-        setMode(mode);
+        setMultiPlayerMode(mode);
     };
 
     const control = {
-        value: mode,
+        value: multiPlayerMode,
         onChange: handleChange,
         exclusive: true,
     };
@@ -181,17 +206,17 @@ const WaitingLobby = () => {
                 >
                     [
                     <ToggleButton
-                        disabled={mode === "server"}
-                        value="server"
-                        key="server"
+                        disabled={multiPlayerMode === "twoPlayerServer"}
+                        value="twoPlayerServer"
+                        key="twoPlayerServer"
                     >
                         <ComputerIcon />
                     </ToggleButton>
                     ,
                     <ToggleButton
-                        disabled={mode === "custom"}
-                        value="custom"
-                        key="custom"
+                        disabled={multiPlayerMode === "twoPlayerCustom"}
+                        value="twoPlayerCustom"
+                        key="twoPlayerCustom"
                     >
                         <GroupIcon />
                     </ToggleButton>

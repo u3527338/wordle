@@ -4,8 +4,16 @@ import express from "express";
 import http from "http";
 import mongoose from "mongoose";
 import { Server } from "socket.io";
-import UserModel from "./db/userModel.js";
-import { getColors, getTargetWord, isValidWord } from "./helper.js";
+import PlayerModel from "./db/playerModel.js";
+import {
+    getColors,
+    getTargetWord,
+    isValidWord,
+    updateGameInfo,
+} from "./helper.js";
+import { v4 as uuidv4 } from "uuid";
+import GameRoomModel from "./db/gameRoomModel.js";
+import GameHistoryModel from "./db/gameHistoryModel.js";
 
 const app = express();
 app.use(
@@ -38,82 +46,112 @@ const io = new Server(server, {
 // );
 // dotenv.config();
 
+const rooms = {};
+
 app.get("/", (req, res) => {
     res.json("connected");
 });
 
 app.post("/register", async (req, res) => {
-    const { username, password } = req.body;
-    const hasUser = (await UserModel.countDocuments({})) > 0;
-    bcrypt
-        .hash(password, 10)
-        .then(async (hashedPassword) => {
-            const user = {
-                username: username,
-                password: hashedPassword,
-                role: hasUser ? ["user"] : ["admin", "user"],
-            };
-            await UserModel.create(user)
-                .then((result) => {
-                    res.status(201).send({
-                        status: "success",
-                        message: "Create Account Succeed",
-                    });
-                })
-                .catch((error) => {
-                    res.status(500).send({
-                        status: "failed",
-                        message:
-                            error.errorResponse.code === 11000
-                                ? "User exist"
-                                : "Create Account Failed",
-                    });
-                });
-        })
-        .catch((e) => {
-            res.status(500).send({
-                status: "failed",
-                message: "Create Account Failed",
-            });
+    const { username, password, nickname } = req.body;
+
+    if (!username || !password || !nickname) {
+        return res
+            .status(400)
+            .json({ status: "failed", message: "Missing required fields" });
+    }
+
+    try {
+        // Check if username or nickname already exists
+        const existingUser = await PlayerModel.findOne({
+            $or: [{ username }, { nickname }],
         });
+        if (existingUser) {
+            return res.status(400).json({
+                status: "failed",
+                message: "Username or nickname already exists",
+            });
+        }
+
+        const hasUser = (await PlayerModel.countDocuments({})) > 0;
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = new PlayerModel({
+            username,
+            password: hashedPassword,
+            role: hasUser ? ["user"] : ["admin", "user"],
+            nickname,
+            stats: {
+                totalGames: 0,
+                totalWins: 0,
+                totalGuesses: 0,
+                lastPlayed: null,
+            },
+        });
+
+        await newUser.save();
+
+        res.status(201).send({
+            status: "success",
+            message: "Create Account Succeed",
+        });
+    } catch (error) {
+        res.status(500).send({
+            status: "failed",
+            message:
+                error.code === 11000
+                    ? "User or nickname already exists"
+                    : "Create Account Failed",
+        });
+    }
 });
 
 app.post("/login", async (req, res) => {
     const { username, password: input_password } = req.body;
-    const user = await UserModel.findOne({ username }).select("+password");
-    const validMessage = "Login succeed";
-    const invalidMessage = "Username or password incorrect";
-    if (!user) {
-        res.status(401).send({
-            status: "failed",
-            data: [],
-            message: invalidMessage,
-        });
-        return;
-    }
 
-    const isPasswordValid = await bcrypt.compare(input_password, user.password);
-    if (!isPasswordValid) {
-        res.status(401).send({
-            status: "failed",
-            data: [],
-            message: invalidMessage,
-        });
-        return;
-    }
+    try {
+        const user = await PlayerModel.findOne({ username }).select(
+            "+password"
+        );
+        const invalidMessage = "Username or password incorrect";
 
-    const { password, ...user_data } = user._doc;
-    res.status(200).send({
-        status: "success",
-        data: [user_data],
-        message: validMessage,
-    });
+        if (!user) {
+            return res
+                .status(401)
+                .json({ status: "failed", message: invalidMessage });
+        }
+
+        const isPasswordValid = await bcrypt.compare(
+            input_password,
+            user.password
+        );
+        if (!isPasswordValid) {
+            return res
+                .status(401)
+                .json({ status: "failed", message: invalidMessage });
+        }
+
+        const { password, ...user_data } = user._doc; // exclude password
+        res.status(200).json({
+            status: "success",
+            data: [user_data],
+            message: "Login succeed",
+        });
+    } catch (err) {
+        res.status(500).json({ status: "failed", message: "Login failed" });
+    }
 });
 
 app.get("/user/:userId", async (req, res) => {
     const userId = req.params.userId;
+
     try {
-        const user = await UserModel.findOne({ _id: userId });
+        const user = await PlayerModel.findOne({ _id: userId });
+        if (!user) {
+            return res
+                .status(404)
+                .json({ status: "failed", message: "User not found" });
+        }
         res.status(200).json({
             status: "success",
             data: user,
@@ -126,7 +164,58 @@ app.get("/user/:userId", async (req, res) => {
     }
 });
 
-const rooms = {};
+//create room
+app.post("/createRoom", async (req, res) => {
+    const { mode, player } = req.body; // collect host info from request
+    const roomId = uuidv4();
+    const isSinglePlayer = mode === "singlePlayer";
+    try {
+        const newRoom = new GameRoomModel({
+            roomId,
+            mode,
+            players: [player],
+            status: isSinglePlayer ? "Playing" : "Waiting",
+        });
+
+        await newRoom.save();
+
+        res.status(201).json({ status: "ok", message: "Room created", roomId });
+    } catch (err) {
+        console.error("Error creating room:", err);
+        res.status(500).json({
+            status: "error",
+            message: "Failed to create room",
+        });
+    }
+});
+
+//join room
+app.post("/joinRoom", async (req, res) => {
+    const { roomId, player } = req.body;
+
+    try {
+        const room = await GameRoomModel.findOne({ roomId });
+        if (!room || room.players.length >= 2) {
+            return res.status(400).json({
+                status: "error",
+                message: "Room is full or doesn't exist",
+            });
+        }
+
+        room.players.push(player);
+        if (room.players.length === 2) {
+            room.status = "Playing";
+        }
+        await room.save();
+
+        res.json({ status: "ok", message: "Player joined", room });
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: "Error joining room",
+        });
+    }
+});
 
 // Helper to emit current rooms state
 const emitRooms = () => {
@@ -136,17 +225,17 @@ const emitRooms = () => {
 // Function to start a new game in a room
 const resetGameStatus = (room) => {
     room.startTime = Date.now();
-    // Clear target words for custom mode
-    if (room.mode === "custom") {
-        room.players.forEach((p) => (p.targetWord = null));
-    }
+    room.players.forEach((p) => {
+        p.targetWord = null;
+        p.guesses = [];
+    });
     io.emit("resetGameStatus");
     startNewGame(room);
 };
 
 const startNewGame = (room) => {
     // If custom mode and answers are not yet assigned
-    if (room.mode === "custom") {
+    if (room.mode === "twoPlayerCustom") {
         const allHaveAnswers = room.players.every((p) => p.targetWord);
         if (!allHaveAnswers) {
             // Request answers from both players
@@ -171,14 +260,14 @@ const startNewGame = (room) => {
     }
 
     // Now, start game if answers are ready (for custom mode)
-    if (room.mode === "custom") {
+    if (room.mode === "twoPlayerCustom") {
         const allHaveAnswers = room.players.every((p) => p.targetWord);
         if (!allHaveAnswers) return; // Wait until answers are set
     }
 
     // Notify players game is starting
     room.players.forEach((p) => {
-        io.to(p.socketId).emit("startNewGame");
+        io.to(p.socketId).emit("startNewGame", room.mode);
     });
     emitRooms();
 };
@@ -193,14 +282,22 @@ io.on("connection", (socket) => {
     });
 
     // Create a new room
-    socket.on("createRoom", ({ roomId, player, mode, isSinglePlayer }) => {
+    socket.on("createRoom", ({ roomId, player, mode }) => {
+        const isSinglePlayer = mode === "singlePlayer";
         console.log(
             `Create room ${roomId} for user ${player.id} with socket.id=${socket.id}`
         );
         rooms[roomId] = {
             id: roomId,
-            hostName: player.id,
-            players: [{ id: player.id, socketId: socket.id }],
+            hostName: player.name,
+            players: [
+                {
+                    id: player.id,
+                    name: player.name,
+                    guesses: [],
+                    socketId: socket.id,
+                },
+            ],
             mode,
             isSinglePlayer,
             startTime: null,
@@ -221,10 +318,16 @@ io.on("connection", (socket) => {
         socket.join(roomId);
         socket.roomId = roomId; // Store roomId on socket
         if (!room.players.find((p) => p.id === player.id))
-            room.players.push({ id: player.id, socketId: socket.id });
+            room.players.push({
+                id: player.id,
+                name: player.name,
+                guesses: [],
+                socketId: socket.id,
+            });
         emitRooms();
         // When second player joins, start game and handle custom question exchange
         if (room.players?.length === 2) {
+            socket.emit("playerJoined", player);
             startNewGame(room);
         }
     });
@@ -260,64 +363,81 @@ io.on("connection", (socket) => {
     });
 
     // Handle guesses
-    socket.on("submitGuess", ({ roomId, userId, currentGuess, guesses }) => {
-        const room = rooms[roomId];
+    socket.on(
+        "submitGuess",
+        async ({ roomId, userId, currentGuess, guesses }) => {
+            const room = rooms[roomId];
 
-        if (!room || !room.players) return;
+            if (!room || !room.players) return;
 
-        const player = room.players.find((p) => p.id === userId);
-        if (!player || !player.targetWord) {
-            socket.emit("status", { type: "unknown" });
-            return;
-        }
+            const player = room.players.find((p) => p.id === userId);
+            if (!player || !player.targetWord) {
+                socket.emit("status", { type: "unknown" });
+                return;
+            }
 
-        const guess = currentGuess.toUpperCase();
-        if (
-            guess.length !== 5 ||
-            !/^[A-Z]+$/.test(guess) ||
-            !isValidWord(guess)
-        ) {
+            const guess = currentGuess.toUpperCase();
+            if (
+                guess.length !== 5 ||
+                !/^[A-Z]+$/.test(guess) ||
+                !isValidWord(guess)
+            ) {
+                socket.emit("status", {
+                    type: "invalidGuess",
+                    props: { index: guesses.length },
+                });
+                return;
+            }
+
+            const colors = getColors(guess, player.targetWord);
+
+            player.guesses.push(currentGuess);
+            emitRooms();
+
             socket.emit("status", {
-                type: "invalidGuess",
-                props: { index: guesses.length },
+                type: "validGuess",
+                props: {
+                    guess,
+                    colors,
+                    index: guesses.length + 1,
+                    answer: player.targetWord,
+                },
             });
-            return;
+
+            // Feedback to opponent
+            if (room.players.length > 1) {
+                room.players.forEach((p) => {
+                    if (p.id !== userId) {
+                        io.to(p.socketId).emit("opponentGuess", {
+                            guess,
+                            colors,
+                        });
+                    }
+                });
+            }
+
+            // Win check
+            if (guess === player.targetWord) {
+                const gameId = `${roomId}_${Date.now()}`;
+                await updateGameInfo({
+                    gameId,
+                    userId,
+                    mode: room.mode,
+                    players: room.players?.map(({ socketId, ...p }) => ({
+                        ...p,
+                        isWinner: userId === p.id,
+                    })),
+                    winnerUserId: userId,
+                });
+                room.players.forEach(async (p) => {
+                    io.to(p.socketId).emit("endGame", { winner: userId });
+                });
+            }
         }
-
-        const colors = getColors(guess, player.targetWord);
-
-        // Feedback to self
-        // io.to(socket.id).emit("selfGuess", { guess, colors });
-        socket.emit("status", {
-            type: "validGuess",
-            props: {
-                guess,
-                colors,
-                index: guesses.length + 1,
-                answer: player.targetWord,
-            },
-        });
-
-        // Feedback to opponent
-        if (room.players.length > 1) {
-            room.players.forEach((p) => {
-                if (p.id !== userId) {
-                    io.to(p.socketId).emit("opponentGuess", { guess, colors });
-                }
-            });
-        }
-
-        // Win check
-        if (guess === player.targetWord) {
-            room.players.forEach((p) => {
-                io.to(p.socketId).emit("endGame", { winner: userId });
-            });
-        }
-    });
+    );
 
     // Reset game
     socket.on("replayGame", ({ roomId }) => {
-        console.log("replay game");
         const room = rooms[roomId];
         if (room) {
             resetGameStatus(room);
@@ -340,7 +460,7 @@ io.on("connection", (socket) => {
             });
 
             if (room.players?.length > 0) {
-                room.hostName = room.players[0].id;
+                room.hostName = room.players[0].name;
             }
 
             // Delete room if empty
@@ -386,7 +506,7 @@ server.listen(PORT, () => {
 });
 
 mongoose.connect(
-    "mongodb+srv://ericsiu0420:o3z1XU2OVrxiM3el@backend.r7htuqw.mongodb.net/SGK_online?retryWrites=true&w=majority&appName=Backend"
+    "mongodb+srv://ericsiu0420:o3z1XU2OVrxiM3el@backend.r7htuqw.mongodb.net/Wordle?retryWrites=true&w=majority&appName=Backend"
 );
 
 export default app;

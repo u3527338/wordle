@@ -14,11 +14,12 @@ import { useUserQuery } from "../../request/hook";
 export const MainAppbar = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { userId, setUserId, currentTab, setCurrentTab } = useStore();
+    const { user, setUser, currentTab, setCurrentTab } = useStore();
+    const userId = user?.userId;
     const { data } = useUserQuery(userId);
 
     const logout = () => {
-        setUserId(null);
+        setUser(null);
         navigate("/login");
     };
 

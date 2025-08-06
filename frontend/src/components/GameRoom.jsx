@@ -1,23 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import FormModal from "../components/modal/FormModal";
+import { WORDLE_TRIALS } from "../constants/constants";
 import { useStore } from "../hook/useStore";
 import socket from "../socket";
 import WordleGrid from "./card/WordleGrid";
 import Wrapper from "./general/Wrapper";
-import { WORDLE_TRIALS } from "../constants/constants";
 
 const GameRoom = ({ isSinglePlayer }) => {
     const { roomId } = useParams();
-    const { userId } = useStore();
+    const { user } = useStore();
+    const { userId, nickName } = user;
     const navigate = useNavigate();
 
     const [currentGuess, setCurrentGuess] = useState("");
-    const [shakeRow, setShakeRow] = useState(null);
     const [guesses, setGuesses] = useState([]);
+    const [opponent, setOpponent] = useState(null);
     const [opponentGuesses, setOpponentGuesses] = useState([]);
+
+    const [gameMode, setGameMode] = useState("");
     const [gameStatus, setGameStatus] = useState("waiting");
+
     const [message, setMessage] = useState(null);
+    const [shakeRow, setShakeRow] = useState(null);
     const [questionModalState, setQuestionModalState] = useState({
         open: false,
         forPlayerId: null,
@@ -35,7 +40,9 @@ const GameRoom = ({ isSinglePlayer }) => {
     const socketHandlers = {
         opponentGuess: ({ guess, colors }) =>
             setOpponentGuesses((prev) => [...prev, { guess, colors }]),
-        startNewGame: () => {
+        playerJoined: (player) => setOpponent(player),
+        startNewGame: (mode) => {
+            setGameMode(mode);
             setGameStatus("playing");
             setMessage(null);
         },
@@ -103,7 +110,11 @@ const GameRoom = ({ isSinglePlayer }) => {
         if (!isSinglePlayer) {
             socket.emit("joinRoom", {
                 roomId,
-                player: { id: userId, isHost: false },
+                player: {
+                    id: userId,
+                    name: nickName,
+                    isHost: false,
+                },
             });
         }
         registerSocketEvents(socketHandlers);
@@ -112,7 +123,7 @@ const GameRoom = ({ isSinglePlayer }) => {
 
     const handleInvalidGuess = (rowIndex) => {
         setShakeRow(rowIndex);
-        setTimeout(() => setShakeRow(null), 500); // Reset after shake duration
+        setTimeout(() => setShakeRow(null), 500);
     };
 
     const handleOpenModal = (forPlayerId) => {

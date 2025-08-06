@@ -31,3 +31,21 @@ export const getUser = async (userId) => {
         return error.response.data;
     }
 };
+
+export const createRoom = async (data) => {
+    try {
+        const response = await axios.post(`${API}/createRoom`, data);
+        return response.data;
+    } catch (error) {
+        return error.response.data;
+    }
+};
+
+export const joinRoom = async (data) => {
+    try {
+        const response = await axios.post(`${API}/joinRoom`, data);
+        return response.data;
+    } catch (error) {
+        return error.response.data;
+    }
+};

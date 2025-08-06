@@ -13,18 +13,18 @@ const App = () => {
             },
         },
     });
-    const userId = useStore((state) => state.userId);
+    const user = useStore((state) => state.user);
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!userId) navigate("/login");
-    }, [userId]);
+        if (!user) navigate("/login");
+    }, [user]);
 
     return (
         <>
             <div className="background-image"></div>
             <QueryClientProvider client={queryClient}>
-                {userId ? <AuthenticatedApp /> : <UnauthenticatedApp />}
+                {user ? <AuthenticatedApp /> : <UnauthenticatedApp />}
             </QueryClientProvider>
         </>
     );

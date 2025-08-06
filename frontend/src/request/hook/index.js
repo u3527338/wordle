@@ -1,5 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getUser, login, registerNewUser } from "../api";
+import {
+    createGameHistoryAndUpdateUserStats,
+    createRoom,
+    getUser,
+    joinRoom,
+    login,
+    registerNewUser,
+} from "../api";
 
 /* auth */
 const useRegisterMutation = () => {
@@ -26,4 +33,26 @@ const useUserQuery = (user_id) => {
     return query;
 };
 
-export { useLoginMutation, useRegisterMutation, useUserQuery };
+const useCreateRoomMutation = () => {
+    const mutation = useMutation({
+        mutationFn: createRoom,
+        mutationKey: ["createRoom"],
+    });
+    return mutation;
+};
+
+const useJoinRoomMutation = () => {
+    const mutation = useMutation({
+        mutationFn: joinRoom,
+        mutationKey: ["joinRoom"],
+    });
+    return mutation;
+};
+
+export {
+    useLoginMutation,
+    useRegisterMutation,
+    useUserQuery,
+    useCreateRoomMutation,
+    useJoinRoomMutation,
+};
