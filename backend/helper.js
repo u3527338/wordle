@@ -1,6 +1,6 @@
 import GameHistoryModel from "./db/gameHistoryModel.js";
 import PlayerModel from "./db/playerModel.js";
-import wordleData from "./public/wordle.json" assert { type: "json" };
+import wordleData from "./public/wordle.json" with { type: "json" };
 
 // const wordleData = {
 //     words: ["REACT", "APPLE", "EXIST", "HELLO", "enter"],
