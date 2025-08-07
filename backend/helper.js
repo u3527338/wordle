@@ -1,8 +1,9 @@
 import GameHistoryModel from "./db/gameHistoryModel.js";
 import PlayerModel from "./db/playerModel.js";
-import { promises as fs } from 'fs';
 
-const wordleData = JSON.parse(await fs.readFile('./wordle.json', 'utf-8'));
+const wordleData = {
+    words: ["REACT", "APPLE", "EXIST", "HELLO", "ENTER"],
+};
 
 export const findRoomIdByPlayerId = (rooms, id) => {
     for (const roomId in rooms) {
