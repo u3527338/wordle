@@ -321,7 +321,7 @@ io.on("connection", (socket) => {
     socket.on("joinRoom", ({ roomId, player }) => {
         const room = rooms[roomId];
         if (!room || room.players.length >= 2) {
-            socket.emit("status", { type: "exceed" });
+            socket.emit("status", { type: "roomNotAvailable" });
             return;
         }
         socket.join(roomId);

@@ -87,6 +87,7 @@ const GameRoom = ({ isSinglePlayer }) => {
                     setGameStatus("pending");
                     setMessage(`Your answer is ${props.answer}`);
                     return;
+                case "roomNotAvailable":
                 case "unknown":
                     navigate("/wordle");
                     return;
@@ -110,16 +111,16 @@ const GameRoom = ({ isSinglePlayer }) => {
     };
 
     useEffect(() => {
-        if (!isSinglePlayer) {
-            socket.emit("joinRoom", {
-                roomId,
-                player: {
-                    id: userId,
-                    name: nickName,
-                    isHost: false,
-                },
-            });
-        }
+        // if (!isSinglePlayer) {
+        socket.emit("joinRoom", {
+            roomId,
+            player: {
+                id: userId,
+                name: nickName,
+                isHost: false,
+            },
+        });
+        // }
         registerSocketEvents(socketHandlers);
         return () => deregisterSocketEvents(socketHandlers);
     }, []);
@@ -269,7 +270,9 @@ const GameRoom = ({ isSinglePlayer }) => {
                                 }
                                 maxLength={5}
                             />
-                            <MyButton onClick={handleAnswerSubmit}>Submit</MyButton>
+                            <MyButton onClick={handleAnswerSubmit}>
+                                Submit
+                            </MyButton>
                         </div>
                     )}
                     {gameStatus === "assigned" && (

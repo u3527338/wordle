@@ -144,7 +144,7 @@ const WaitingLobby = () => {
             mode: gameMode,
         });
         navigate(`/wordle/${roomId}`, {
-            state: { isSinglePlayer, isAuth: true },
+            state: { isSinglePlayer },
         });
         // mutateCreateRoom(data, {
         //     onSuccess: (data) => {
@@ -157,7 +157,7 @@ const WaitingLobby = () => {
         //                 mode: gameMode,
         //             });
         //             navigate(`/wordle/${roomId}`, {
-        //                 state: { isSinglePlayer, isAuth: true },
+        //                 state: { isSinglePlayer },
         //             });
         //         } else {
         //         }
