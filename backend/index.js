@@ -20,14 +20,16 @@ import bodyParser from "body-parser";
 const app = express();
 dotenv.config();
 
+const env = process.env.NODE_ENV || "development";
 const MONGO_URL = process.env.MONGO_URL;
 const PORT = process.env.PORT || 4000;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";
+const CORS_ORIGIN =
+    env === "development"
+        ? process.env.CORS_ORIGIN_DEV
+        : process.env.CORS_ORIGIN;
 
 mongoose
-    .connect(
-        "mongodb+srv://ericsiu0420:o3z1XU2OVrxiM3el@backend.r7htuqw.mongodb.net/Wordle?retryWrites=true&w=majority&appName=Backend"
-    )
+    .connect(MONGO_URL)
     .then(() => console.log("Connected to MongoDB"))
     .catch((err) => console.error("MongoDB connection error:", err));
 
