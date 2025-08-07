@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
+import bodyParser from "body-parser";
 import cors from "cors";
-import dotenv from "dotenv";
 import express from "express";
 import http from "http";
 import mongoose from "mongoose";
@@ -15,18 +15,16 @@ import {
     isValidWord,
     updateGameInfo,
 } from "./helper.js";
-import bodyParser from "body-parser";
 
 const app = express();
-dotenv.config();
 
-const env = process.env.NODE_ENV || "development";
-const MONGO_URL = process.env.MONGO_URL;
-const PORT = process.env.PORT || 4000;
-const CORS_ORIGIN =
-    env === "development"
-        ? process.env.CORS_ORIGIN_DEV
-        : process.env.CORS_ORIGIN;
+const MONGO_URL =
+    "mongodb+srv://ericsiu0420:o3z1XU2OVrxiM3el@backend.r7htuqw.mongodb.net/Wordle?retryWrites=true&w=majority&appName=Backend";
+const PORT = 4000;
+const CORS_ORIGIN = [
+    "https://wordle-three-rho.vercel.app",
+    "http://localhost:3000",
+];
 
 mongoose
     .connect(MONGO_URL)
@@ -35,7 +33,7 @@ mongoose
 
 app.use(
     cors({
-        origin: [CORS_ORIGIN],
+        origin: CORS_ORIGIN,
         methods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"],
         credentials: true,
     }),
