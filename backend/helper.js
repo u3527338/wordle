@@ -2,7 +2,7 @@ import GameHistoryModel from "./db/gameHistoryModel.js";
 import PlayerModel from "./db/playerModel.js";
 
 const wordleData = {
-    words: ["REACT", "APPLE", "EXIST", "HELLO", "ENTER"],
+    words: ["REACT", "APPLE", "EXIST", "HELLO", "enter"],
 };
 
 export const findRoomIdByPlayerId = (rooms, id) => {
@@ -105,8 +105,7 @@ async function updatePlayerStats({ userId, mode, isWinner, guessesCount }) {
 export const getTargetWord = () => {
     const words = wordleData.words;
     const randomIndex = Math.floor(Math.random() * words.length);
-    console.log({ targetWord: words[randomIndex] });
-    return words[randomIndex];
+    return words[randomIndex].toUpperCase();
 };
 
 export const getColors = (guess, target) => {
@@ -136,6 +135,6 @@ export const getColors = (guess, target) => {
 };
 
 export const isValidWord = (word) => {
-    const words = wordleData.words;
+    const words = wordleData.words.map((w) => w.toUpperCase());
     return words.includes(word.toUpperCase());
 };
