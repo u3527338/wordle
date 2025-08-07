@@ -28,6 +28,14 @@
     animation: pulse 2s infinite; /* glow animation */
 }
 
+/* Container for buttons at bottom center */
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 10px;
+}
+
 /* Pulse animation for glow effect with Wordle green */
 @keyframes pulse {
     0% {

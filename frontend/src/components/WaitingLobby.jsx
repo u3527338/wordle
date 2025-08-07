@@ -30,7 +30,7 @@ const modes = {
 
 const RoomTable = ({ rows, onJoin }) => {
     const hasRecords = rows && rows.length > 0;
-    const headings = ["Room ID", "Host", "Mode", "Players", ""];
+    const headings = ["Host", "Mode", "Players", "Status"];
     const Cell = ({ value, ...props }) => (
         <TableCell
             align="center"
@@ -70,7 +70,7 @@ const RoomTable = ({ rows, onJoin }) => {
                             const maxPlayer = row.isSinglePlayer ? 1 : 2;
                             return (
                                 <TableRow key={row.id} sx={{ borderRadius: 2 }}>
-                                    <Cell value={row.id} />
+                                    {/* <Cell value={row.id} /> */}
                                     <Cell value={row.hostPlayer?.name} />
                                     <Cell value={modes[row.mode]} />
                                     <Cell
@@ -79,7 +79,9 @@ const RoomTable = ({ rows, onJoin }) => {
                                     <Cell
                                         value={
                                             row.players.length >= maxPlayer ? (
-                                                <Typography>Full</Typography>
+                                                <Typography>
+                                                    {row.status}
+                                                </Typography>
                                             ) : (
                                                 <MyButton
                                                     onClick={() =>
@@ -196,6 +198,7 @@ const WaitingLobby = () => {
         mode: room.mode,
         isSinglePlayer: room.isSinglePlayer,
         players: room.players,
+        status: room.status,
     }));
 
     return (

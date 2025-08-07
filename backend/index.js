@@ -275,6 +275,7 @@ const startNewGame = (room) => {
     room.players.forEach((p) => {
         io.to(p.socketId).emit("startNewGame", room.mode);
     });
+    room.status = "Playing";
     emitRooms();
 };
 
@@ -311,6 +312,7 @@ io.on("connection", (socket) => {
             isSinglePlayer,
             startTime: null,
         };
+        rooms[roomId].status = "Waiting";
         emitRooms();
         if (isSinglePlayer && rooms[roomId].players.length === 1) {
             startNewGame(rooms[roomId]);
@@ -449,6 +451,7 @@ io.on("connection", (socket) => {
                 room.players.forEach((p) => {
                     io.to(p.socketId).emit("endGame", {
                         mode: room.mode,
+                        answer: p.targetWord,
                         winner: userId,
                     });
                 });
