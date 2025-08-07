@@ -5,7 +5,6 @@
 - Game history *
 - Player profile
 - Game tutorial
-- In-game keyboard
 
 ### Game Modes
 - Single player cheat mode
@@ -15,4 +14,5 @@
 ### Design
 - Update game lobby and session UI
 - Socket IO code review and potential bug fix
-- Wordle data import (Firebase / AWS)
+- Authentication
+- Wordle list storage

@@ -100,6 +100,10 @@ app.post("/register", async (req, res) => {
         res.status(201).send({
             status: "success",
             message: "Create Account Succeed",
+            data: {
+                id: newUser._id,
+                nickname: newUser.nickname,
+            },
         });
     } catch (error) {
         res.status(500).send({
@@ -113,7 +117,6 @@ app.post("/register", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-    console.log(req.body);
     const { username, password: input_password } = req.body;
 
     try {
@@ -138,10 +141,10 @@ app.post("/login", async (req, res) => {
                 .json({ status: "failed", message: invalidMessage });
         }
 
-        const { password, ...user_data } = user._doc; // exclude password
+        const { password, ...user_data } = user._doc;
         res.status(200).json({
             status: "success",
-            data: [user_data],
+            data: user_data,
             message: "Login succeed",
         });
     } catch (err) {

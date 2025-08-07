@@ -9,6 +9,7 @@ import { useStore } from "../../hook/useStore";
 import { useLoginMutation, useRegisterMutation } from "../../request/hook";
 import { useToastContext } from "../provider/ToastProvider";
 import MyButton from "../common/MyButton";
+import logo from "../../assets/image/logo.png";
 
 export const LoginForm = () => {
     const { mutate: mutateRegister } = useRegisterMutation();
@@ -24,11 +25,10 @@ export const LoginForm = () => {
             onSettled: (res) => {
                 showToast({ status: res.status, detail: res.message });
                 if (res.status === "success") {
-                    const user = res.data[0];
+                    const user = res.data;
                     setUser({
                         userId: user?._id,
                         nickName: user?.nickname,
-                        stats: user?.stats,
                     });
                     navigate("/wordle");
                 }
@@ -39,6 +39,14 @@ export const LoginForm = () => {
     const onRegister = (data) => {
         mutateRegister(data, {
             onSettled: (res) => {
+                if (res.status === "success") {
+                    const user = res.data;
+                    setUser({
+                        userId: user?._id,
+                        nickName: user?.nickname,
+                    });
+                    navigate("/wordle");
+                }
                 showToast({ status: res.status, detail: res.message });
             },
         });
@@ -64,6 +72,17 @@ export const LoginForm = () => {
                     backgroundColor: "rgb(255,255,255,0.7)",
                 }}
             >
+                <Box
+                    component="img"
+                    src={logo}
+                    alt="description"
+                    sx={{
+                        width: "100%",
+                        height: "auto",
+                        display: "block",
+                    }}
+                />
+
                 <Box
                     component="form"
                     onSubmit={handleSubmit(isRegister ? onRegister : onSignIn)}

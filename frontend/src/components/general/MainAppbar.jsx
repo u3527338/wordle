@@ -4,7 +4,7 @@ import Typography from "@mui/material/Typography";
 import { Menubar } from "primereact/menubar";
 import { useEffect } from "react";
 import { CiLogout } from "react-icons/ci";
-import { GiVisoredHelm } from "react-icons/gi";
+import { GiAbstract050 } from "react-icons/gi";
 import { useLocation, useNavigate } from "react-router-dom";
 import { MAIN_BACKGROUND } from "../../constants/colors";
 import { MENU } from "../../constants/constants";
@@ -30,7 +30,7 @@ export const MainAppbar = () => {
     var items = [
         {
             label: "Game",
-            icon: <GiVisoredHelm style={{ marginRight: "0.5rem" }} />,
+            icon: <GiAbstract050 style={{ marginRight: "0.5rem" }} />,
             command: () => {
                 navigate("/wordle");
             },

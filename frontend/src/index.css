@@ -57,11 +57,11 @@ body {
 .button {
     background-color: #6aaa64 !important; /* Wordle green */
     color: #fff !important;
-    padding: 12px 24px !important;
+    padding: 8px 16px !important;
     border: none !important;
     border-radius: 8px !important;
     cursor: pointer !important;
-    font-size: 16px !important;
+    font-size: 12px !important;
     font-weight: bold !important;
     transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s !important;
 }

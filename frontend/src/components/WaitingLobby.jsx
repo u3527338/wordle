@@ -208,6 +208,12 @@ const WaitingLobby = () => {
                     size="small"
                     {...control}
                     aria-label="Small sizes"
+                    sx={{
+                        "& .MuiToggleButton-root.Mui-selected": {
+                            backgroundColor: "#6aaa64",
+                            color: "white",
+                        },
+                    }}
                 >
                     {Object.entries(modes).map(([key, value]) => (
                         <ToggleButton
@@ -220,10 +226,10 @@ const WaitingLobby = () => {
                     ))}
                 </ToggleButtonGroup>
             </div>
+            <MyButton onClick={handleCreateRoom}>Create Room</MyButton>
             <div className="mode-selection">
-                <MyButton onClick={handleCreateRoom}>Create Room</MyButton>
+                <RoomTable rows={rows} onJoin={handleJoinRoom} />
             </div>
-            <RoomTable rows={rows} onJoin={handleJoinRoom} />
         </div>
     );
 };

@@ -2,10 +2,6 @@ import GameHistoryModel from "./db/gameHistoryModel.js";
 import PlayerModel from "./db/playerModel.js";
 import wordleData from "./public/wordle.json" with { type: "json" };
 
-// const wordleData = {
-//     words: ["REACT", "APPLE", "EXIST", "HELLO", "enter"],
-// };
-
 export const findRoomIdByPlayerId = (rooms, id) => {
     for (const roomId in rooms) {
         const room = rooms[roomId];

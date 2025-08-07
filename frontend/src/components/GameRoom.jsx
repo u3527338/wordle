@@ -3,9 +3,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../hook/useStore";
 import socket from "../socket";
-import WordleGrid from "./card/WordleGrid";
+import WordleGrid from "./game/WordleGrid";
 import MyButton from "./common/MyButton";
 import MyModal from "./common/MyModal";
+import WordleKeyboard from "./game/WordleKeyboard";
 
 const GameRoom = ({ isSinglePlayer }) => {
     const { roomId } = useParams();
@@ -46,6 +47,7 @@ const GameRoom = ({ isSinglePlayer }) => {
             setGameMode(mode);
             setGameStatus("playing");
             setMessage(null);
+            handleCloseModal();
         },
         requestAnswerAssignment: ({ forPlayerId }) => {
             setGameStatus("assigning");
@@ -187,10 +189,10 @@ const GameRoom = ({ isSinglePlayer }) => {
     const handleKeyDown = (e) => {
         if (gameStatus !== "playing") return;
 
-        if (e.key === "Enter") {
+        if (e.key.toUpperCase() === "ENTER") {
             if (currentGuess.length !== 5) return;
             handleSubmitGuess();
-        } else if (e.key === "Backspace") {
+        } else if (e.key.toUpperCase() === "BACKSPACE") {
             setCurrentGuess((prev) => prev.slice(0, -1));
         } else if (/^[a-zA-Z]$/.test(e.key)) {
             if (currentGuess.length < 5) {
@@ -198,14 +200,6 @@ const GameRoom = ({ isSinglePlayer }) => {
             }
         }
     };
-
-    useEffect(() => {
-        if (gameStatus === "playing") {
-            window.addEventListener("keydown", handleKeyDown);
-            handleCloseModal();
-        }
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [gameStatus, currentGuess, guesses]);
 
     const leaveButton = {
             label: "Leave",
@@ -216,45 +210,62 @@ const GameRoom = ({ isSinglePlayer }) => {
         assignButton = { label: "Submit", onClick: handleAnswerSubmit };
 
     return (
-        <>
+        <Box>
             <Box
                 sx={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    paddingBottom: 4,
+                    position: "absolute",
+                    top: 12,
+                    left: 12,
                 }}
             >
                 <MyButton onClick={handleLeave} color="#f44336">
                     Leave
                 </MyButton>
             </Box>
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 2,
+                    paddingBottom: 4,
+                }}
+            >
+                {/* Single Player Mode */}
+                {isSinglePlayer ? (
+                    <WordleGrid
+                        guesses={guesses}
+                        currentGuess={currentGuess}
+                        shakeRow={shakeRow}
+                    />
+                ) : (
+                    // Multiplayer Mode: side-by-side or stacked based on screen size
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 2,
+                            width: "100%",
+                            justifyContent: "center",
+                            alignItems: "center",
+                        }}
+                    >
+                        {/* Player Grid */}
+                        <Box sx={{ flex: 1, padding: 2, minWidth: 200 }}>
+                            <WordleGrid
+                                guesses={guesses}
+                                currentGuess={currentGuess}
+                                shakeRow={shakeRow}
+                            />
+                        </Box>
+                        {/* Opponent Grid */}
+                        <Box sx={{ flex: 1, padding: 2, minWidth: 200 }}>
+                            <WordleGrid guesses={opponentGuesses} />
+                        </Box>
+                    </Box>
+                )}
+            </Box>
 
-            {isSinglePlayer ? (
-                <WordleGrid
-                    guesses={guesses}
-                    currentGuess={currentGuess}
-                    shakeRow={shakeRow}
-                />
-            ) : (
-                <Box
-                    sx={{
-                        display: "flex",
-                        justifyContent: "space-around",
-                        px: 2,
-                    }}
-                >
-                    <Box sx={{ padding: 2 }}>
-                        <WordleGrid
-                            guesses={guesses}
-                            currentGuess={currentGuess}
-                            shakeRow={shakeRow}
-                        />
-                    </Box>
-                    <Box sx={{ padding: 2 }}>
-                        <WordleGrid guesses={opponentGuesses} />
-                    </Box>
-                </Box>
-            )}
+            <WordleKeyboard onKeyPress={handleKeyDown} />
 
             {/* Modal for waiting */}
             <MyModal open={gameStatus === "waiting"} buttons={[leaveButton]}>
@@ -300,12 +311,9 @@ const GameRoom = ({ isSinglePlayer }) => {
                         </Box>
                     )}
                     {gameStatus === "assigned" && (
-                        <Box sx={{ mb: 2 }}>
-                            <Typography variant="body1">
-                                Waiting for your opponent to submit their
-                                answer...
-                            </Typography>
-                        </Box>
+                        <Typography variant="body1">
+                            Waiting for your opponent to submit their answer...
+                        </Typography>
                     )}
                 </Box>
             </MyModal>
@@ -335,7 +343,7 @@ const GameRoom = ({ isSinglePlayer }) => {
                     )}
                 </Box>
             </MyModal>
-        </>
+        </Box>
     );
 };
 
