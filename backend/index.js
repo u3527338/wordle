@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import cors from "cors";
-import { configDotenv } from "dotenv";
+import dotenv from "dotenv";
 import express from "express";
 import http from "http";
 import mongoose from "mongoose";
@@ -15,39 +15,43 @@ import {
     isValidWord,
     updateGameInfo,
 } from "./helper.js";
+import bodyParser from "body-parser";
 
 const app = express();
+dotenv.config();
+
+const MONGO_URL = process.env.MONGO_URL;
+const PORT = process.env.PORT || 4000;
+const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";
+
+mongoose
+    .connect(
+        "mongodb+srv://ericsiu0420:o3z1XU2OVrxiM3el@backend.r7htuqw.mongodb.net/Wordle?retryWrites=true&w=majority&appName=Backend"
+    )
+    .then(() => console.log("Connected to MongoDB"))
+    .catch((err) => console.error("MongoDB connection error:", err));
+
 app.use(
     cors({
-        origin: "http://localhost:3000",
+        origin: [CORS_ORIGIN],
         methods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"],
         credentials: true,
-    })
+    }),
+    bodyParser.json()
 );
-app.use(express.json());
 
-// Socket.IO setup
-const server = http.createServer(app); // create HTTP server
+const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:3000",
+        origin: CORS_ORIGIN,
     },
 });
 
-// app.use(
-//     cors({
-//         origin: [
-//             "https://sgk-online-frontend.vercel.app",
-//             "http://localhost:3000",
-//         ],
-//         methods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"],
-//         credentials: true,
-//     }),
-//     bodyParser.json()
-// );
-configDotenv();
+// Start server
+server.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
 
 const WORDLE_TRIALS = 6;
+const rooms = {};
 
 app.get("/", (req, res) => {
     res.json("connected");
@@ -108,6 +112,7 @@ app.post("/register", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
+    console.log(req.body);
     const { username, password: input_password } = req.body;
 
     try {
@@ -272,8 +277,6 @@ const startNewGame = (room) => {
     });
     emitRooms();
 };
-
-const rooms = {};
 
 io.on("connection", (socket) => {
     // Send current rooms to new connection
@@ -535,12 +538,5 @@ io.on("connection", (socket) => {
         }
     });
 });
-
-const PORT = 4000;
-server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
-
-mongoose.connect(process.env.MONGOURL);
 
 export default app;
