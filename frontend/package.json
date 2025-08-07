@@ -13,7 +13,7 @@
     "eslint-config-react-app": "^7.0.1",
     "lodash": "^4.17.21",
     "primeicons": "^7.0.0",
-    "primereact": "^10.6.6",
+    "primereact": "^10.9.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.51.5",

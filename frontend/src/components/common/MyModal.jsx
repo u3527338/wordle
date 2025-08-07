@@ -11,7 +11,11 @@ const MyModal = ({ open, buttons, children }) => {
                 {buttons && buttons.length > 0 && (
                     <div className="modal-buttons">
                         {buttons.map((btn, index) => (
-                            <MyButton key={index} onClick={btn.onClick}>
+                            <MyButton
+                                key={index}
+                                onClick={btn.onClick}
+                                color={btn.color}
+                            >
                                 {btn.label}
                             </MyButton>
                         ))}

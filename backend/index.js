@@ -314,9 +314,9 @@ io.on("connection", (socket) => {
         };
         rooms[roomId].status = "Waiting";
         emitRooms();
-        if (isSinglePlayer && rooms[roomId].players.length === 1) {
-            startNewGame(rooms[roomId]);
-        }
+        // if (isSinglePlayer && rooms[roomId].players.length === 1) {
+        //     startNewGame(rooms[roomId]);
+        // }
     });
 
     // JOIN ROOM
@@ -338,8 +338,11 @@ io.on("connection", (socket) => {
             });
 
         emitRooms();
+        if (room.hostPlayer.id === player.id) socket.emit("hostJoined", player);
 
-        if (room.players.length === 2) {
+        if (room.players.length === 1 && room.mode === "singlePlayer") {
+            startNewGame(rooms[roomId]);
+        } else if (room.players.length === 2 && room.mode !== "singlePlayer") {
             socket.emit("playerJoined", player);
             startNewGame(room);
         }

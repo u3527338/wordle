@@ -1,10 +1,12 @@
+import { Box, Typography } from "@mui/material"; // Import MUI Box
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import MyModal from "./common/MyModal";
 import { useStore } from "../hook/useStore";
 import socket from "../socket";
 import WordleGrid from "./card/WordleGrid";
+import LoadingOverlay from "./common/LoadingOverlay";
 import MyButton from "./common/MyButton";
+import MyModal from "./common/MyModal";
 
 const GameRoom = ({ isSinglePlayer }) => {
     const { roomId } = useParams();
@@ -18,7 +20,7 @@ const GameRoom = ({ isSinglePlayer }) => {
     const [opponentGuesses, setOpponentGuesses] = useState([]);
 
     const [gameMode, setGameMode] = useState("");
-    const [gameStatus, setGameStatus] = useState("waiting");
+    const [gameStatus, setGameStatus] = useState(null);
 
     const [message, setMessage] = useState(null);
     const [shakeRow, setShakeRow] = useState(null);
@@ -39,6 +41,7 @@ const GameRoom = ({ isSinglePlayer }) => {
     const socketHandlers = {
         opponentGuess: ({ guess, colors }) =>
             setOpponentGuesses((prev) => [...prev, { guess, colors }]),
+        hostJoined: (host) => setGameStatus("waiting"),
         playerJoined: (player) => setOpponent(player),
         startNewGame: (mode) => {
             setGameMode(mode);
@@ -207,12 +210,25 @@ const GameRoom = ({ isSinglePlayer }) => {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [gameStatus, currentGuess, guesses]);
 
-    const leaveButton = { label: "Leave", onClick: handleLeave },
+    const leaveButton = { label: "Leave", onClick: handleLeave, color:"#f44336" },
         replayButton = { label: "Replay", onClick: handleReplay },
         assignButton = { label: "Submit", onClick: handleAnswerSubmit };
 
+    if (!gameStatus) return <LoadingOverlay />;
     return (
         <>
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    paddingBottom: 4,
+                }}
+            >
+                <MyButton onClick={handleLeave} color="#f44336">
+                    Leave
+                </MyButton>
+            </Box>
+
             {isSinglePlayer ? (
                 <WordleGrid
                     guesses={guesses}
@@ -220,22 +236,27 @@ const GameRoom = ({ isSinglePlayer }) => {
                     shakeRow={shakeRow}
                 />
             ) : (
-                <div
-                    style={{ display: "flex", justifyContent: "space-around" }}
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-around",
+                        px: 2,
+                    }}
                 >
-                    <div style={{ padding: 20 }}>
+                    <Box sx={{ padding: 2 }}>
                         <WordleGrid
                             guesses={guesses}
                             currentGuess={currentGuess}
                             shakeRow={shakeRow}
                         />
-                    </div>
-                    <div style={{ padding: 20 }}>
+                    </Box>
+                    <Box sx={{ padding: 2 }}>
                         <WordleGrid guesses={opponentGuesses} />
-                    </div>
-                </div>
+                    </Box>
+                </Box>
             )}
 
+            {/* Modal for waiting */}
             <MyModal open={gameStatus === "waiting"} buttons={[leaveButton]}>
                 <span>Waiting for others to join...</span>
             </MyModal>
@@ -245,8 +266,8 @@ const GameRoom = ({ isSinglePlayer }) => {
                 open={questionModalState.open}
                 buttons={gameStatus === "assigning" ? [assignButton] : []}
             >
-                <div
-                    style={{
+                <Box
+                    sx={{
                         width: "100%",
                         display: "flex",
                         flexDirection: "column",
@@ -254,16 +275,10 @@ const GameRoom = ({ isSinglePlayer }) => {
                     }}
                 >
                     {gameStatus === "assigning" && (
-                        <div>
-                            <h3
-                                style={{
-                                    marginBottom: "20px",
-                                    fontSize: "22px",
-                                    fontWeight: "bold",
-                                }}
-                            >
+                        <Box sx={{ mb: 2, textAlign: "center" }}>
+                            <Typography variant="h6" gutterBottom>
                                 Answer
-                            </h3>
+                            </Typography>
                             <input
                                 autoFocus
                                 style={{
@@ -272,7 +287,6 @@ const GameRoom = ({ isSinglePlayer }) => {
                                     borderRadius: "8px",
                                     border: "1px solid #ccc",
                                     width: "80%",
-                                    marginBottom: "20px",
                                     outline: "none",
                                     boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
                                     transition: "border-color 0.2s",
@@ -283,14 +297,17 @@ const GameRoom = ({ isSinglePlayer }) => {
                                 }
                                 maxLength={5}
                             />
-                        </div>
+                        </Box>
                     )}
                     {gameStatus === "assigned" && (
-                        <div className="status-message">
-                            Waiting for your opponent to submit their answer...
-                        </div>
+                        <Box sx={{ mb: 2 }}>
+                            <Typography variant="body1">
+                                Waiting for your opponent to submit their
+                                answer...
+                            </Typography>
+                        </Box>
                     )}
-                </div>
+                </Box>
             </MyModal>
 
             {/* End game modal */}
@@ -300,24 +317,24 @@ const GameRoom = ({ isSinglePlayer }) => {
                     gameStatus !== "pending" ? [replayButton, leaveButton] : []
                 }
             >
-                <div
-                    style={{
+                <Box
+                    sx={{
                         display: "flex",
                         flexDirection: "column",
-                        gap: "15px",
+                        gap: 2,
                         alignItems: "center",
                     }}
                 >
                     {message && (
-                        <p style={{ fontSize: "18px", marginBottom: "20px" }}>
+                        <Typography
+                            variant="body1"
+                            sx={{ fontSize: "18px", mb: 2 }}
+                        >
                             {message}
-                        </p>
+                        </Typography>
                     )}
-                </div>
+                </Box>
             </MyModal>
-            <MyButton onClick={handleLeave} color="#f44336">
-                Leave
-            </MyButton>
         </>
     );
 };

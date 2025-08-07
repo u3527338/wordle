@@ -1,3 +1,5 @@
+import Button from "@mui/material/Button";
+
 const MyButton = ({
     onClick,
     className = "button",
@@ -6,14 +8,14 @@ const MyButton = ({
     ...props
 }) => {
     return (
-        <button
-            className={className}
-            sx={{ backgroundColor: color }}
+        <Button
             onClick={onClick}
+            className={className}
+            sx={{ backgroundColor: `${color} !important` }}
             {...props}
         >
             {children}
-        </button>
+        </Button>
     );
 };
 
