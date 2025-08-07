@@ -19,12 +19,9 @@ export const updateGameInfo = async ({
     players,
     winnerUserId,
 }) => {
-    if (!gameId || !userId || !mode || !players || !winnerUserId) {
-        return res
-            .status(400)
-            .json({ status: "error", message: "Missing required fields" });
+    if (!gameId || !userId || !mode || !players) {
+        return { status: "error", message: "Missing required fields" };
     }
-
     try {
         // Check if record already exists
         let gameRecord = await GameHistoryModel.findOne({ gameId });
@@ -41,15 +38,23 @@ export const updateGameInfo = async ({
         }
 
         // Update player's stats
-        const player = players.find((p) => p.id === userId);
-        await updatePlayerStats({
-            userId,
-            mode,
-            isWinner: userId === winnerUserId,
-            guessesCount: player.guesses ? player.guesses.length : 0,
-        });
+        await Promise.all(
+            players.map(async (player) => {
+                await updatePlayerStats({
+                    userId: player.id,
+                    mode,
+                    isWinner: player.id === winnerUserId,
+                    guessesCount: player.guesses ? player.guesses.length : 0,
+                });
+            })
+        );
     } catch (err) {
-        console.error("Error processing game history:", err);
+        console.log("error");
+        return {
+            status: "error",
+            message: "Error creating game history",
+            error: err,
+        };
     }
 };
 
@@ -60,8 +65,9 @@ async function updatePlayerStats({ userId, mode, isWinner, guessesCount }) {
             throw new Error("Player not found");
         }
 
-        // Increment total games
+        // Increment total games and gusssesCount
         player.stats.totalGames += 1;
+        player.stats.totalGuesses += guessesCount;
 
         // Update lastPlayed date
         player.stats.lastPlayed = new Date();
@@ -69,14 +75,15 @@ async function updatePlayerStats({ userId, mode, isWinner, guessesCount }) {
         // Update mode-specific stats
         if (player.stats.modeStats && player.stats.modeStats[mode]) {
             const modeStats = player.stats.modeStats[mode];
+            console.log("update user gamesPlayed", userId);
             modeStats.gamesPlayed += 1;
 
             if (isWinner) {
                 modeStats.wins += 1;
             }
 
-            // Add guessesCount to guessesSum
-            modeStats.guessesSum += guessesCount;
+            // Add guessesCount to totalGuesses
+            modeStats.totalGuesses += guessesCount;
         }
 
         // Update totalWins if player won
@@ -86,6 +93,7 @@ async function updatePlayerStats({ userId, mode, isWinner, guessesCount }) {
 
         await player.save();
         console.log("Player stats updated successfully");
+        console.log({ userId, isWinner });
     } catch (err) {
         console.error("Error updating player stats:", err);
     }

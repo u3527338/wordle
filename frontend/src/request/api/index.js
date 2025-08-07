@@ -1,7 +1,6 @@
 import axios from "axios";
 
-// const API = "https://sgk-online-api.vercel.app";
-const API = "http://localhost:4000";
+const API = process.env.REACT_APP_API_URL;
 axios.defaults.withCredentials = true;
 
 export const registerNewUser = async (data) => {

@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import cors from "cors";
+import { configDotenv } from "dotenv";
 import express from "express";
 import http from "http";
 import mongoose from "mongoose";
@@ -18,7 +19,7 @@ import {
 const app = express();
 app.use(
     cors({
-        origin: "http://localhost:3000", // your frontend URL
+        origin: "http://localhost:3000",
         methods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"],
         credentials: true,
     })
@@ -29,7 +30,7 @@ app.use(express.json());
 const server = http.createServer(app); // create HTTP server
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:3000", // allow your frontend origin
+        origin: "http://localhost:3000",
     },
 });
 
@@ -44,7 +45,7 @@ const io = new Server(server, {
 //     }),
 //     bodyParser.json()
 // );
-// dotenv.config();
+configDotenv();
 
 const WORDLE_TRIALS = 6;
 
@@ -291,7 +292,10 @@ io.on("connection", (socket) => {
 
         rooms[roomId] = {
             id: roomId,
-            hostName: player.name,
+            hostPlayer: {
+                id: player.id,
+                name: player.name,
+            },
             players: [
                 {
                     id: player.id,
@@ -421,18 +425,23 @@ io.on("connection", (socket) => {
             }
 
             // Check for win
-            if (guess === player.targetWord) {
-                const gameId = `${roomId}_${Date.now()}`;
+            const gameId = `${roomId}_${Date.now()}`;
+            const createGameHistory = async ({ winnerId }) => {
                 await updateGameInfo({
                     gameId,
                     userId,
                     mode: room.mode,
                     players: room.players.map(({ socketId, ...p }) => ({
                         ...p,
-                        isWinner: userId === p.id,
+                        isWinner: winnerId === p.id,
                     })),
-                    winnerUserId: userId,
+                    winnerUserId: winnerId,
                 });
+                console.log(`Update game ${gameId}`);
+            };
+
+            if (guess === player.targetWord) {
+                await createGameHistory({ winnerId: userId });
                 // Notify all players
                 room.players.forEach((p) => {
                     io.to(p.socketId).emit("endGame", {
@@ -448,6 +457,7 @@ io.on("connection", (socket) => {
                 player.targetWord !== guess
             ) {
                 if (room.mode === "singlePlayer") {
+                    await createGameHistory({ winnerId: null });
                     socket.emit("endGame", {
                         mode: room.mode,
                         answer: player.targetWord,
@@ -460,10 +470,8 @@ io.on("connection", (socket) => {
                             type: "waitForOpponent",
                             props: { answer: player.targetWord },
                         });
-                        console.log("waitforopponent");
                     } else {
-                        console.log("test1");
-
+                        await createGameHistory({ winnerId: null });
                         socket.emit("endGame", {
                             mode: room.mode,
                             answer: player.targetWord,
@@ -494,7 +502,10 @@ io.on("connection", (socket) => {
             });
             // Update host if needed
             if (room.players.length > 0) {
-                room.hostName = room.players[0].name;
+                room.hostPlayer = {
+                    id: room.players[0]?.id,
+                    name: room.players[0]?.name,
+                };
             } else {
                 delete rooms[roomId];
             }
@@ -530,8 +541,6 @@ server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-mongoose.connect(
-    "mongodb+srv://ericsiu0420:o3z1XU2OVrxiM3el@backend.r7htuqw.mongodb.net/Wordle?retryWrites=true&w=majority&appName=Backend"
-);
+mongoose.connect(process.env.MONGOURL);
 
 export default app;

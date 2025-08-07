@@ -20,6 +20,7 @@ import { useCreateRoomMutation, useJoinRoomMutation } from "../request/hook";
 import socket from "../socket";
 import "../styles/WaitingLobby.css";
 import MyButton from "./common/MyButton";
+import { generateUUID } from "../constants/helper.js";
 
 const modes = {
     singlePlayer: <PersonIcon />,
@@ -70,7 +71,7 @@ const RoomTable = ({ rows, onJoin }) => {
                             return (
                                 <TableRow key={row.id} sx={{ borderRadius: 2 }}>
                                     <Cell value={row.id} />
-                                    <Cell value={row.hostName} />
+                                    <Cell value={row.hostPlayer?.name} />
                                     <Cell value={modes[row.mode]} />
                                     <Cell
                                         value={`${row.players.length} / ${maxPlayer}`}
@@ -136,37 +137,47 @@ const WaitingLobby = () => {
         const isSinglePlayer = gameMode === "singlePlayer";
         const player = { id: userId, name: nickName };
         const data = { player, mode: gameMode };
-        mutateCreateRoom(data, {
-            onSuccess: (data) => {
-                const status = data.status;
-                const roomId = data.roomId;
-                if (status === "ok") {
-                    socket.emit("createRoom", {
-                        roomId,
-                        player: { id: userId, name: nickName },
-                        mode: gameMode,
-                    });
-                    navigate(`/wordle/${roomId}`, {
-                        state: { isSinglePlayer, isAuth: true },
-                    });
-                } else {
-                }
-            },
+        const roomId = generateUUID();
+        socket.emit("createRoom", {
+            roomId,
+            player: { id: userId, name: nickName },
+            mode: gameMode,
         });
+        navigate(`/wordle/${roomId}`, {
+            state: { isSinglePlayer, isAuth: true },
+        });
+        // mutateCreateRoom(data, {
+        //     onSuccess: (data) => {
+        //         const status = data.status;
+        //         const roomId = data.roomId;
+        //         if (status === "ok") {
+        //             socket.emit("createRoom", {
+        //                 roomId,
+        //                 player: { id: userId, name: nickName },
+        //                 mode: gameMode,
+        //             });
+        //             navigate(`/wordle/${roomId}`, {
+        //                 state: { isSinglePlayer, isAuth: true },
+        //             });
+        //         } else {
+        //         }
+        //     },
+        // });
     };
 
     const handleJoinRoom = (roomId) => {
         const player = { id: userId, name: nickName };
         const data = { player, roomId };
-        mutateJoinRoom(data, {
-            onSuccess: (data) => {
-                const status = data.status;
-                if (status === "ok") {
-                    navigate(`/wordle/${roomId}`);
-                } else {
-                }
-            },
-        });
+        navigate(`/wordle/${roomId}`);
+        // mutateJoinRoom(data, {
+        //     onSuccess: (data) => {
+        //         const status = data.status;
+        //         if (status === "ok") {
+        //             navigate(`/wordle/${roomId}`);
+        //         } else {
+        //         }
+        //     },
+        // });
     };
 
     const handleChange = (event, mode) => {
@@ -181,7 +192,7 @@ const WaitingLobby = () => {
 
     const rows = rooms.map((room) => ({
         id: room.id,
-        hostName: room.hostName || "Host",
+        hostPlayer: room.hostPlayer || room.players[0],
         mode: room.mode,
         isSinglePlayer: room.isSinglePlayer,
         players: room.players,

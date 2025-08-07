@@ -25,22 +25,21 @@ const PlayerSchema = new mongoose.Schema({
         totalGames: { type: Number, default: 0 },
         totalWins: { type: Number, default: 0 },
         totalGuesses: { type: Number, default: 0 },
-        bestScore: { type: Number, default: null },
         modeStats: {
             singlePlayer: {
                 gamesPlayed: { type: Number, default: 0 },
                 wins: { type: Number, default: 0 },
-                guessesSum: { type: Number, default: 0 },
+                totalGuesses: { type: Number, default: 0 },
             },
             twoPlayerCustom: {
                 gamesPlayed: { type: Number, default: 0 },
                 wins: { type: Number, default: 0 },
-                guessesSum: { type: Number, default: 0 },
+                totalGuesses: { type: Number, default: 0 },
             },
             twoPlayerServer: {
                 gamesPlayed: { type: Number, default: 0 },
                 wins: { type: Number, default: 0 },
-                guessesSum: { type: Number, default: 0 },
+                totalGuesses: { type: Number, default: 0 },
             },
         },
         lastPlayed: { type: Date },
