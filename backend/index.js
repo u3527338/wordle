@@ -15,11 +15,14 @@ import {
     isValidWord,
     updateGameInfo,
 } from "./helper.js";
+import { configDotenv } from "dotenv";
 
 const app = express();
+configDotenv();
 
-const MONGO_URL =
-    "mongodb+srv://ericsiu0420:o3z1XU2OVrxiM3el@backend.r7htuqw.mongodb.net/Wordle?retryWrites=true&w=majority&appName=Backend";
+const MONGO_URL = process.env.MONGO_URL;
+// const MONGO_URL =
+//     "mongodb+srv://ericsiu0420:o3z1XU2OVrxiM3el@backend.r7htuqw.mongodb.net/Wordle?retryWrites=true&w=majority&appName=Backend";
 const PORT = 4000;
 const CORS_ORIGIN = [
     "https://wordle-three-rho.vercel.app",

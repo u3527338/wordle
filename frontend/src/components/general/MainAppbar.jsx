@@ -36,7 +36,7 @@ export const MainAppbar = () => {
             },
         },
         {
-            label: "Exit",
+            label: "Logout",
             icon: <CiLogout style={{ marginRight: "0.5rem" }} />,
             command: () => {
                 logout();

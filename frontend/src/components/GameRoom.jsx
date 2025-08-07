@@ -4,7 +4,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../hook/useStore";
 import socket from "../socket";
 import WordleGrid from "./card/WordleGrid";
-import LoadingOverlay from "./common/LoadingOverlay";
 import MyButton from "./common/MyButton";
 import MyModal from "./common/MyModal";
 
@@ -20,7 +19,7 @@ const GameRoom = ({ isSinglePlayer }) => {
     const [opponentGuesses, setOpponentGuesses] = useState([]);
 
     const [gameMode, setGameMode] = useState("");
-    const [gameStatus, setGameStatus] = useState(null);
+    const [gameStatus, setGameStatus] = useState("waiting");
 
     const [message, setMessage] = useState(null);
     const [shakeRow, setShakeRow] = useState(null);
@@ -120,7 +119,6 @@ const GameRoom = ({ isSinglePlayer }) => {
     };
 
     useEffect(() => {
-        // if (!isSinglePlayer) {
         socket.emit("joinRoom", {
             roomId,
             player: {
@@ -129,7 +127,6 @@ const GameRoom = ({ isSinglePlayer }) => {
                 isHost: false,
             },
         });
-        // }
         registerSocketEvents(socketHandlers);
         return () => deregisterSocketEvents(socketHandlers);
     }, []);
@@ -210,11 +207,14 @@ const GameRoom = ({ isSinglePlayer }) => {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [gameStatus, currentGuess, guesses]);
 
-    const leaveButton = { label: "Leave", onClick: handleLeave, color:"#f44336" },
+    const leaveButton = {
+            label: "Leave",
+            onClick: handleLeave,
+            color: "#f44336",
+        },
         replayButton = { label: "Replay", onClick: handleReplay },
         assignButton = { label: "Submit", onClick: handleAnswerSubmit };
 
-    if (!gameStatus) return <LoadingOverlay />;
     return (
         <>
             <Box
