@@ -22,7 +22,7 @@ const GameRoom = () => {
     const [guesses, setGuesses] = useState([]);
     const [opponentGuesses, setOpponentGuesses] = useState([]);
     const [gameMode, setGameMode] = useState("");
-    const [gameStatus, setGameStatus] = useState(null); // Waiting | Assigning | Assigned | Pending | Playing | Finish
+    const [gameStatus, setGameStatus] = useState("Waiting"); // Waiting | Assigning | Assigned | Pending | Playing | Finish
     const [winner, setWinner] = useState(null);
     const [answer, setAnswer] = useState(null);
 
@@ -61,12 +61,16 @@ const GameRoom = () => {
             setAnswer(currentGameStatus.answer);
             setWinner(currentGameStatus.winner);
         },
-        startNewGame: (mode) => {
+        startWordle: (mode) => {
             setGameMode(mode);
             setGameStatus("Playing");
         },
         requestAnswerAssignment: ({ opponentId }) => {
             setGameStatus("Assigning");
+        },
+        waitForOpponent: ({ answer }) => {
+            setAnswer(answer);
+            setGameStatus("Pending");
         },
         endGame: ({ answer, winner }) => {
             setAnswer(answer);
@@ -76,6 +80,7 @@ const GameRoom = () => {
             }, 500);
         },
         resetGameStatus: (replay) => {
+            console.log("reset", replay)
             if (!replay) setOpponent(null);
             setGameStatus("Waiting");
         },
@@ -105,10 +110,6 @@ const GameRoom = () => {
                     return;
                 case "validAssignment":
                     setGameStatus("Assigned");
-                    return;
-                case "waitForOpponent":
-                    setAnswer(props.answer);
-                    setGameStatus("Pending");
                     return;
                 case "roomNotAvailable":
                 case "unknown":
@@ -162,11 +163,7 @@ const GameRoom = () => {
     useEffect(() => {
         socket.emit("joinRoom", {
             roomId,
-            player: {
-                id: userId,
-                name: nickName,
-                isHost: false,
-            },
+            player: { id: userId, name: nickName },
         });
         registerSocketEvents(socketHandlers);
         return () => deregisterSocketEvents(socketHandlers);
@@ -178,8 +175,8 @@ const GameRoom = () => {
     };
 
     const handleAnswerSubmit = () => {
-        socket.emit("submitCustomQuestion", {
-            opponentId: opponent.id,
+        socket.emit("submitAssignment", {
+            player: { id: userId },
             customWord: assignAnswer,
         });
     };

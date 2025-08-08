@@ -2,14 +2,57 @@ import GameHistoryModel from "./db/gameHistoryModel.js";
 import PlayerModel from "./db/playerModel.js";
 import wordleData from "./public/wordle.json" with { type: "json" };
 
-export const findRoomIdByPlayerId = (rooms, {id, socketId}) => {
+export const findRoomIdByPlayerId = (rooms, { id, socketId }) => {
     for (const roomId in rooms) {
         const room = rooms[roomId];
-        if (room.players.some((p) => (p.socketId === socketId || p.id === id))) {
+        if (room.players.some((p) => p.socketId === socketId || p.id === id)) {
             return roomId;
         }
     }
     return null;
+};
+
+export const findUserIdBySocketId = (players, socketId) => {
+    for (const [userId, userInfo] of Object.entries(players)) {
+        if (userInfo.socketId === socketId) {
+            return userId;
+        }
+    }
+    return null;
+};
+
+export const getOpponent = (room, playerId) => {
+    return room.players?.find((p) => p.id !== playerId);
+};
+
+export const getIsRoomJoinable = (room, player) => {
+    if (!room) {
+        return false;
+    }
+    const maxPlayer = room.mode === "singlePlayer" ? 1 : 2;
+    if (
+        (room.players.length >= maxPlayer &&
+            !room.players?.find((p) => p.id === player.id)) ||
+        room.status === "Finish"
+    ) {
+        return false;
+    }
+    return true
+}
+
+export const isSinglePlayerMode = (room) => {
+    return room.mode === "singlePlayer"
+}
+
+export const updateHost = (room) => {
+    const nextPlayer = room.players[0];
+    if (nextPlayer) {
+        room.hostPlayer = {
+            id: nextPlayer.id,
+            name: nextPlayer.name,
+            socketId: nextPlayer.socketId,
+        };
+    }
 };
 
 export const updateGameInfo = async ({
@@ -25,7 +68,7 @@ export const updateGameInfo = async ({
     try {
         // Check if record already exists
         let gameRecord = await GameHistoryModel.findOne({ gameId });
-        console.log({gameRecord})
+        console.log({ gameRecord });
         if (!gameRecord) {
             // If not, create a new game record with current user
             gameRecord = new GameHistoryModel({
@@ -45,7 +88,7 @@ export const updateGameInfo = async ({
                     mode,
                     isWinner: player.id === winnerUserId,
                     guessesCount: player.guesses ? player.guesses.length : 0,
-                })
+                });
                 await updatePlayerStats({
                     userId: player.id,
                     mode,
@@ -106,7 +149,7 @@ async function updatePlayerStats({ userId, mode, isWinner, guessesCount }) {
 export const getTargetWord = () => {
     const words = wordleData.words;
     const randomIndex = Math.floor(Math.random() * words.length);
-    console.log({targetWord: words[randomIndex]})
+    console.log({ targetWord: words[randomIndex] });
     return words[randomIndex].toUpperCase();
 };
 

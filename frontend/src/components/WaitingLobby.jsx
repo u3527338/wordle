@@ -67,7 +67,7 @@ const RoomTable = ({ rows, onJoin }) => {
                 <TableBody>
                     {hasRecords ? (
                         rows.map((row) => {
-                            const maxPlayer = row.isSinglePlayer ? 1 : 2;
+                            const maxPlayer = row.mode === "singlePlayer" ? 1 : 2;
                             return (
                                 <TableRow key={row.id} sx={{ borderRadius: 2 }}>
                                     {/* <Cell value={row.id} /> */}
@@ -78,11 +78,8 @@ const RoomTable = ({ rows, onJoin }) => {
                                     />
                                     <Cell
                                         value={
-                                            row.players.length >= maxPlayer ? (
-                                                <Typography>
-                                                    {row.status}
-                                                </Typography>
-                                            ) : (
+                                            row.players.length < maxPlayer &&
+                                            row.status !== "Finish" ? (
                                                 <MyButton
                                                     onClick={() =>
                                                         onJoin(row.id)
@@ -90,6 +87,10 @@ const RoomTable = ({ rows, onJoin }) => {
                                                 >
                                                     Join
                                                 </MyButton>
+                                            ) : (
+                                                <Typography>
+                                                    {row.status}
+                                                </Typography>
                                             )
                                         }
                                     />
@@ -191,7 +192,6 @@ const WaitingLobby = () => {
         id: room.id,
         hostPlayer: room.hostPlayer || room.players[0],
         mode: room.mode,
-        isSinglePlayer: room.isSinglePlayer,
         players: room.players,
         status: room.status,
     }));
