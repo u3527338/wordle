@@ -563,7 +563,7 @@ io.on("connection", (socket) => {
                             p.guesses = [];
                             p.status = "Finish";
                             io.to(p.socketId).emit("endGame", {
-                                answer: player.targetWord,
+                                answer: p.targetWord,
                                 winner: null,
                             });
                         });
