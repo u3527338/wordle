@@ -243,6 +243,7 @@ const resetGameStatus = (room, replay) => {
         io.to(p.socketId).emit("resetGameStatus", replay);
     });
     room.status = "Waiting";
+    emitRooms();
 };
 
 const startNewGame = (room) => {
@@ -519,7 +520,6 @@ io.on("connection", (socket) => {
             };
 
             if (guess === player.targetWord) {
-                await createGameHistory({ winnerId: userId });
                 // Notify all players
                 room.players.forEach((p) => {
                     io.to(p.socketId).emit("endGame", {
@@ -530,7 +530,8 @@ io.on("connection", (socket) => {
                 });
                 room.winner = player.id;
                 room.status = "Finish";
-                emitRooms()
+                emitRooms();
+                // await createGameHistory({ winnerId: userId });
             }
 
             // Check for maximum guesses
@@ -539,7 +540,6 @@ io.on("connection", (socket) => {
                 player.targetWord !== guess
             ) {
                 if (room.mode === "singlePlayer") {
-                    await createGameHistory({ winnerId: null });
                     socket.emit("endGame", {
                         answer: player.targetWord,
                         winner: null,
@@ -547,7 +547,8 @@ io.on("connection", (socket) => {
                     player.status = "Finish";
                     room.winner = null;
                     room.status = "Finish";
-                    emitRooms()
+                    emitRooms();
+                    // await createGameHistory({ winnerId: null });
                 } else {
                     const self = room.players.find((p) => p.id === userId);
                     const opponent = room.players.find((p) => p.id !== userId);
@@ -558,7 +559,6 @@ io.on("connection", (socket) => {
                         });
                         self.status = "Pending";
                     } else {
-                        await createGameHistory({ winnerId: null });
                         room.players.forEach((p) => {
                             p.guesses = [];
                             p.status = "Finish";
@@ -570,6 +570,7 @@ io.on("connection", (socket) => {
                         room.winner = null;
                         room.status = "Finish";
                         emitRooms();
+                        // await createGameHistory({ winnerId: null });
                     }
                 }
             }

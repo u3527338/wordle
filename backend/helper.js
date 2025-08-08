@@ -25,7 +25,7 @@ export const updateGameInfo = async ({
     try {
         // Check if record already exists
         let gameRecord = await GameHistoryModel.findOne({ gameId });
-
+        console.log({gameRecord})
         if (!gameRecord) {
             // If not, create a new game record with current user
             gameRecord = new GameHistoryModel({
@@ -40,6 +40,12 @@ export const updateGameInfo = async ({
         // Update player's stats
         await Promise.all(
             players.map(async (player) => {
+                console.log({
+                    userId: player.id,
+                    mode,
+                    isWinner: player.id === winnerUserId,
+                    guessesCount: player.guesses ? player.guesses.length : 0,
+                })
                 await updatePlayerStats({
                     userId: player.id,
                     mode,
