@@ -2,10 +2,10 @@ import GameHistoryModel from "./db/gameHistoryModel.js";
 import PlayerModel from "./db/playerModel.js";
 import wordleData from "./public/wordle.json" with { type: "json" };
 
-export const findRoomIdByPlayerId = (rooms, id) => {
+export const findRoomIdByPlayerId = (rooms, {id, socketId}) => {
     for (const roomId in rooms) {
         const room = rooms[roomId];
-        if (room.players.some((p) => p.socketId === id)) {
+        if (room.players.some((p) => (p.socketId === socketId || p.id === id))) {
             return roomId;
         }
     }
@@ -75,7 +75,6 @@ async function updatePlayerStats({ userId, mode, isWinner, guessesCount }) {
         // Update mode-specific stats
         if (player.stats.modeStats && player.stats.modeStats[mode]) {
             const modeStats = player.stats.modeStats[mode];
-            console.log("update user gamesPlayed", userId);
             modeStats.gamesPlayed += 1;
 
             if (isWinner) {
@@ -93,7 +92,6 @@ async function updatePlayerStats({ userId, mode, isWinner, guessesCount }) {
 
         await player.save();
         console.log("Player stats updated successfully");
-        console.log({ userId, isWinner });
     } catch (err) {
         console.error("Error updating player stats:", err);
     }
@@ -102,6 +100,7 @@ async function updatePlayerStats({ userId, mode, isWinner, guessesCount }) {
 export const getTargetWord = () => {
     const words = wordleData.words;
     const randomIndex = Math.floor(Math.random() * words.length);
+    console.log({targetWord: words[randomIndex]})
     return words[randomIndex].toUpperCase();
 };
 

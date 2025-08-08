@@ -17,7 +17,6 @@ const LetterCell = ({ letter, color, animate, shake }) => {
 
 const WordleGrid = ({ guesses, currentGuess = "", shakeRow }) => {
     const rows = Array.from({ length: WORDLE_TRIALS }, (_, i) => i);
-
     return (
         <div className="wordle-grid-container">
             {rows.map((rowIdx) => {
@@ -25,7 +24,6 @@ const WordleGrid = ({ guesses, currentGuess = "", shakeRow }) => {
                 const guess = isGuessRow ? guesses[rowIdx].guess : "";
                 const colors = isGuessRow ? guesses[rowIdx].colors : [];
                 const isCurrentRow = rowIdx === guesses.length;
-
                 return (
                     <div key={rowIdx} className="wordle-row">
                         {Array.from({ length: 5 }).map((_, i) => (

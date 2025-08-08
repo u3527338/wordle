@@ -3,80 +3,93 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../hook/useStore";
 import socket from "../socket";
-import WordleGrid from "./game/WordleGrid";
+import LoadingOverlay from "./common/LoadingOverlay";
 import MyButton from "./common/MyButton";
 import MyModal from "./common/MyModal";
+import WordleGrid from "./game/WordleGrid";
 import WordleKeyboard from "./game/WordleKeyboard";
+import { useToastContext } from "./provider/ToastProvider";
 
-const GameRoom = ({ isSinglePlayer }) => {
+const GameRoom = () => {
     const { roomId } = useParams();
     const { user } = useStore();
     const { userId, nickName } = user;
     const navigate = useNavigate();
-
+    const { showToast } = useToastContext();
     const [currentGuess, setCurrentGuess] = useState("");
-    const [guesses, setGuesses] = useState([]);
-    const [opponent, setOpponent] = useState(null);
-    const [opponentGuesses, setOpponentGuesses] = useState([]);
 
+    const [opponent, setOpponent] = useState(null);
+    const [guesses, setGuesses] = useState([]);
+    const [opponentGuesses, setOpponentGuesses] = useState([]);
     const [gameMode, setGameMode] = useState("");
-    const [gameStatus, setGameStatus] = useState("waiting");
+    const [gameStatus, setGameStatus] = useState(null); // Waiting | Assigning | Assigned | Pending | Playing | Finish
+    const [winner, setWinner] = useState(null);
+    const [answer, setAnswer] = useState(null);
 
     const [message, setMessage] = useState(null);
     const [shakeRow, setShakeRow] = useState(null);
-    const [questionModalState, setQuestionModalState] = useState({
-        open: false,
-        forPlayerId: null,
-        input: "",
-    });
+    const [assignAnswer, setAssignAnswer] = useState("");
 
     const resetGameStatus = () => {
-        setGuesses([]);
-        setOpponentGuesses([]);
         setCurrentGuess("");
-        setMessage(null);
-        setGameStatus("waiting");
+        setOpponentGuesses([]);
+        setGuesses([]);
+        setAnswer(null);
+        setWinner(null);
+        setAssignAnswer("");
     };
 
     const socketHandlers = {
         opponentGuess: ({ guess, colors }) =>
             setOpponentGuesses((prev) => [...prev, { guess, colors }]),
-        hostJoined: (host) => setGameStatus("waiting"),
-        playerJoined: (player) => setOpponent(player),
+        playerJoined: (player) => {
+            setOpponent(player);
+        },
+        playerRejoined: (player) => {
+            showToast({
+                status: "info",
+                detail: `${player.name} has rejoined the game`,
+            });
+            setOpponent(player);
+        },
+        retrieveGameStatus: ({ currentGameStatus }) => {
+            setOpponent(currentGameStatus.opponent);
+            setGameMode(currentGameStatus.gameMode);
+            setGameStatus(currentGameStatus.gameStatus);
+            setGuesses(currentGameStatus.guesses || []);
+            setOpponentGuesses(currentGameStatus.opponentGuesses || []);
+            setAnswer(currentGameStatus.answer);
+            setWinner(currentGameStatus.winner);
+        },
         startNewGame: (mode) => {
             setGameMode(mode);
-            setGameStatus("playing");
-            setMessage(null);
-            handleCloseModal();
+            setGameStatus("Playing");
         },
-        requestAnswerAssignment: ({ forPlayerId }) => {
-            setGameStatus("assigning");
-            handleOpenModal(forPlayerId);
+        requestAnswerAssignment: ({ opponentId }) => {
+            setGameStatus("Assigning");
         },
-        endGame: ({ answer, winner, mode }) => {
-            if (!winner) {
-                if (mode === "singlePlayer") {
-                    setMessage(`The answer is ${answer}`);
-                } else {
-                    setMessage(`No one wins. Your answer is ${answer}`);
-                }
-            } else if (winner === userId) {
-                setMessage(`Congratulations!`);
-            } else {
-                setMessage(
-                    `Your opponent wins the game.\n${
-                        mode === "twoPlayerServer" ? "The" : "Your"
-                    } answer is ${answer}`
-                );
-            }
+        endGame: ({ answer, winner }) => {
+            setAnswer(answer);
+            setWinner(winner);
             setTimeout(() => {
-                setGameStatus("end");
+                setGameStatus("Finish");
             }, 500);
         },
-        resetGameStatus: () => {
-            resetGameStatus();
+        resetGameStatus: (replay) => {
+            if (!replay) setOpponent(null);
+            setGameStatus("Waiting");
         },
-        playerLeft: ({ userId }) => {
+        playerDisconnected: (player) => {
+            showToast({
+                status: "info",
+                detail: `${player.name} has been disconnected from the game`,
+            });
+        },
+        playerLeft: (player) => {
+            showToast({
+                status: "info",
+                detail: `${player.name} has left the room`,
+            });
             resetGameStatus();
         },
         status: ({ type, props }) => {
@@ -91,11 +104,11 @@ const GameRoom = ({ isSinglePlayer }) => {
                     setCurrentGuess("");
                     return;
                 case "validAssignment":
-                    setGameStatus("assigned");
+                    setGameStatus("Assigned");
                     return;
                 case "waitForOpponent":
-                    setGameStatus("pending");
-                    setMessage(`Your answer is ${props.answer}`);
+                    setAnswer(props.answer);
+                    setGameStatus("Pending");
                     return;
                 case "roomNotAvailable":
                 case "unknown":
@@ -121,6 +134,32 @@ const GameRoom = ({ isSinglePlayer }) => {
     };
 
     useEffect(() => {
+        if (gameStatus === "Waiting") {
+            resetGameStatus();
+        } else if (gameStatus === "Playing") {
+            setMessage(null);
+        } else if (gameStatus === "Pending") {
+            setMessage(`Your answer is ${answer}`);
+        } else if (gameStatus === "Finish") {
+            if (!winner) {
+                if (gameMode === "singlePlayer") {
+                    setMessage(`The answer is ${answer}`);
+                } else {
+                    setMessage(`No one wins. Your answer is ${answer}`);
+                }
+            } else if (winner === userId) {
+                setMessage(`Congratulations!`);
+            } else {
+                setMessage(
+                    `Your opponent wins the game.\n${
+                        gameMode === "twoPlayerServer" ? "The" : "Your"
+                    } answer is ${answer}`
+                );
+            }
+        }
+    }, [gameMode, gameStatus, winner, answer]);
+
+    useEffect(() => {
         socket.emit("joinRoom", {
             roomId,
             player: {
@@ -138,25 +177,10 @@ const GameRoom = ({ isSinglePlayer }) => {
         setTimeout(() => setShakeRow(null), 500);
     };
 
-    const handleOpenModal = (forPlayerId) => {
-        setQuestionModalState({ open: true, forPlayerId, input: "" });
-    };
-
-    const handleCloseModal = () => {
-        setQuestionModalState({ open: false, forPlayerId: null, input: "" });
-    };
-
-    const handleInputChange = (value) => {
-        setQuestionModalState((prev) => ({
-            ...prev,
-            input: value.toUpperCase(),
-        }));
-    };
-
     const handleAnswerSubmit = () => {
         socket.emit("submitCustomQuestion", {
-            forPlayerId: questionModalState.forPlayerId,
-            customWord: questionModalState.input,
+            opponentId: opponent.id,
+            customWord: assignAnswer,
         });
     };
 
@@ -168,11 +192,7 @@ const GameRoom = ({ isSinglePlayer }) => {
     // Handle Replay
     const handleReplay = () => {
         socket.emit("replayGame", { roomId });
-        setGuesses([]);
-        setOpponentGuesses([]);
-        setCurrentGuess("");
-        setMessage(null);
-        setGameStatus("waiting"); // reset to waiting for answers
+        resetGameStatus();
     };
 
     // Handle Leave
@@ -181,13 +201,12 @@ const GameRoom = ({ isSinglePlayer }) => {
         setGuesses([]);
         setOpponentGuesses([]);
         setCurrentGuess("");
-        setMessage(null);
         navigate("/wordle");
     };
 
     // Handle keyboard input
     const handleKeyDown = (e) => {
-        if (gameStatus !== "playing") return;
+        if (gameStatus !== "Playing") return;
 
         if (e.key.toUpperCase() === "ENTER") {
             if (currentGuess.length !== 5) return;
@@ -208,6 +227,8 @@ const GameRoom = ({ isSinglePlayer }) => {
         },
         replayButton = { label: "Replay", onClick: handleReplay },
         assignButton = { label: "Submit", onClick: handleAnswerSubmit };
+
+    if (!gameStatus) return <LoadingOverlay />;
 
     return (
         <Box>
@@ -232,7 +253,7 @@ const GameRoom = ({ isSinglePlayer }) => {
                 }}
             >
                 {/* Single Player Mode */}
-                {isSinglePlayer ? (
+                {gameMode === "singlePlayer" ? (
                     <WordleGrid
                         guesses={guesses}
                         currentGuess={currentGuess}
@@ -250,7 +271,7 @@ const GameRoom = ({ isSinglePlayer }) => {
                         }}
                     >
                         {/* Player Grid */}
-                        <Box sx={{ flex: 1, padding: 2, minWidth: 200 }}>
+                        <Box sx={{ flex: 1, padding: 2 }}>
                             <WordleGrid
                                 guesses={guesses}
                                 currentGuess={currentGuess}
@@ -258,7 +279,7 @@ const GameRoom = ({ isSinglePlayer }) => {
                             />
                         </Box>
                         {/* Opponent Grid */}
-                        <Box sx={{ flex: 1, padding: 2, minWidth: 200 }}>
+                        <Box sx={{ flex: 1, padding: 2 }}>
                             <WordleGrid guesses={opponentGuesses} />
                         </Box>
                     </Box>
@@ -268,14 +289,14 @@ const GameRoom = ({ isSinglePlayer }) => {
             <WordleKeyboard onKeyPress={handleKeyDown} />
 
             {/* Modal for waiting */}
-            <MyModal open={gameStatus === "waiting"} buttons={[leaveButton]}>
+            <MyModal open={gameStatus === "Waiting"} buttons={[leaveButton]}>
                 <span>Waiting for others to join...</span>
             </MyModal>
 
             {/* Modal for answer input */}
             <MyModal
-                open={questionModalState.open}
-                buttons={gameStatus === "assigning" ? [assignButton] : []}
+                open={gameStatus === "Assigning" || gameStatus === "Assigned"}
+                buttons={gameStatus === "Assigning" ? [assignButton] : []}
             >
                 <Box
                     sx={{
@@ -285,7 +306,7 @@ const GameRoom = ({ isSinglePlayer }) => {
                         alignItems: "center",
                     }}
                 >
-                    {gameStatus === "assigning" && (
+                    {gameStatus === "Assigning" && (
                         <Box sx={{ mb: 2, textAlign: "center" }}>
                             <Typography variant="h6" gutterBottom>
                                 Answer
@@ -302,15 +323,17 @@ const GameRoom = ({ isSinglePlayer }) => {
                                     boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
                                     transition: "border-color 0.2s",
                                 }}
-                                value={questionModalState.input}
+                                value={assignAnswer}
                                 onChange={(e) =>
-                                    handleInputChange(e.target.value)
+                                    setAssignAnswer(
+                                        e.target.value.toUpperCase()
+                                    )
                                 }
                                 maxLength={5}
                             />
                         </Box>
                     )}
-                    {gameStatus === "assigned" && (
+                    {gameStatus === "Assigned" && (
                         <Typography variant="body1">
                             Waiting for your opponent to submit their answer...
                         </Typography>
@@ -320,9 +343,9 @@ const GameRoom = ({ isSinglePlayer }) => {
 
             {/* End game modal */}
             <MyModal
-                open={gameStatus === "end" || gameStatus === "pending"}
+                open={gameStatus === "Finish" || gameStatus === "Pending"}
                 buttons={
-                    gameStatus !== "pending" ? [replayButton, leaveButton] : []
+                    gameStatus !== "Pending" ? [replayButton, leaveButton] : []
                 }
             >
                 <Box
@@ -334,10 +357,7 @@ const GameRoom = ({ isSinglePlayer }) => {
                     }}
                 >
                     {message && (
-                        <Typography
-                            variant="body1"
-                            sx={{ fontSize: "18px", mb: 2 }}
-                        >
+                        <Typography variant="body1" sx={{ fontSize: "18px" }}>
                             {message}
                         </Typography>
                     )}

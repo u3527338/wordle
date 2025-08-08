@@ -136,7 +136,6 @@ const WaitingLobby = () => {
     }, []);
 
     const handleCreateRoom = () => {
-        const isSinglePlayer = gameMode === "singlePlayer";
         const player = { id: userId, name: nickName };
         const data = { player, mode: gameMode };
         const roomId = generateUUID();
@@ -145,9 +144,7 @@ const WaitingLobby = () => {
             player: { id: userId, name: nickName },
             mode: gameMode,
         });
-        navigate(`/wordle/${roomId}`, {
-            state: { isSinglePlayer },
-        });
+        navigate(`/wordle/${roomId}`);
         // mutateCreateRoom(data, {
         //     onSuccess: (data) => {
         //         const status = data.status;
@@ -158,9 +155,7 @@ const WaitingLobby = () => {
         //                 player: { id: userId, name: nickName },
         //                 mode: gameMode,
         //             });
-        //             navigate(`/wordle/${roomId}`, {
-        //                 state: { isSinglePlayer },
-        //             });
+        //             navigate(`/wordle/${roomId}`);
         //         } else {
         //         }
         //     },
