@@ -6,7 +6,7 @@ export const MainContainer = ({ children }) => {
     return (
         <Box component="main" sx={{ flexGrow: 1 }}>
             <Toolbar />
-            <Container maxWidth="lg" sx={{ mt: 2, mb: 2, height: "100%" }}>
+            <Container maxWidth="lg" sx={{ padding: 0 }}>
                 {children}
             </Container>
         </Box>

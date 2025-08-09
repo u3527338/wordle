@@ -6,9 +6,10 @@ import socket from "../socket";
 import LoadingOverlay from "./common/LoadingOverlay";
 import MyButton from "./common/MyButton";
 import MyModal from "./common/MyModal";
-import WordleGrid from "./game/WordleGrid";
+import WordleGridsContainer from "./game/WordleGridContainer";
 import WordleKeyboard from "./game/WordleKeyboard";
 import { useToastContext } from "./provider/ToastProvider";
+import "../styles/GameRoom.css"
 
 const GameRoom = () => {
     const { roomId } = useParams();
@@ -22,7 +23,7 @@ const GameRoom = () => {
     const [guesses, setGuesses] = useState([]);
     const [opponentGuesses, setOpponentGuesses] = useState([]);
     const [gameMode, setGameMode] = useState("");
-    const [gameStatus, setGameStatus] = useState("Waiting"); // Waiting | Assigning | Assigned | Pending | Playing | Finish
+    const [gameStatus, setGameStatus] = useState(null); // Waiting | Assigning | Assigned | Pending | Playing | Finish
     const [winner, setWinner] = useState(null);
     const [answer, setAnswer] = useState(null);
 
@@ -42,8 +43,9 @@ const GameRoom = () => {
     const socketHandlers = {
         opponentGuess: ({ guess, colors }) =>
             setOpponentGuesses((prev) => [...prev, { guess, colors }]),
-        playerJoined: (player) => {
-            setOpponent(player);
+        updatePlayers: (players) => {
+            const inComingOpponent = players.find((p) => p.id !== userId);
+            setOpponent(inComingOpponent);
         },
         playerRejoined: (player) => {
             showToast({
@@ -80,7 +82,6 @@ const GameRoom = () => {
             }, 500);
         },
         resetGameStatus: (replay) => {
-            console.log("reset", replay)
             if (!replay) setOpponent(null);
             setGameStatus("Waiting");
         },
@@ -226,9 +227,23 @@ const GameRoom = () => {
         assignButton = { label: "Submit", onClick: handleAnswerSubmit };
 
     if (!gameStatus) return <LoadingOverlay />;
-
+    const isSinglePlayer = gameMode === "singlePlayer";
+    const playerWorldle = {
+            guesses,
+            currentGuess,
+            shakeRow,
+            player: { isSelf: true, id: userId, name: nickName },
+        },
+        opponentWordle = {
+            guesses: opponentGuesses,
+            currentGuess: "",
+            player: opponent,
+        };
+    const wordleGrids = isSinglePlayer
+        ? [playerWorldle]
+        : [playerWorldle, opponentWordle];
     return (
-        <Box>
+        <>
             <Box
                 sx={{
                     position: "absolute",
@@ -240,57 +255,14 @@ const GameRoom = () => {
                     Leave
                 </MyButton>
             </Box>
-            <Box
-                sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 2,
-                    paddingBottom: 4,
-                }}
-            >
-                {/* Single Player Mode */}
-                {gameMode === "singlePlayer" ? (
-                    <WordleGrid
-                        guesses={guesses}
-                        currentGuess={currentGuess}
-                        shakeRow={shakeRow}
-                    />
-                ) : (
-                    // Multiplayer Mode: side-by-side or stacked based on screen size
-                    <Box
-                        sx={{
-                            display: "flex",
-                            gap: 2,
-                            width: "100%",
-                            justifyContent: "center",
-                            alignItems: "center",
-                        }}
-                    >
-                        {/* Player Grid */}
-                        <Box sx={{ flex: 1, padding: 2 }}>
-                            <WordleGrid
-                                guesses={guesses}
-                                currentGuess={currentGuess}
-                                shakeRow={shakeRow}
-                            />
-                        </Box>
-                        {/* Opponent Grid */}
-                        <Box sx={{ flex: 1, padding: 2 }}>
-                            <WordleGrid guesses={opponentGuesses} />
-                        </Box>
-                    </Box>
-                )}
-            </Box>
+            <WordleGridsContainer grids={wordleGrids} />
 
             <WordleKeyboard onKeyPress={handleKeyDown} />
 
-            {/* Modal for waiting */}
             <MyModal open={gameStatus === "Waiting"} buttons={[leaveButton]}>
                 <span>Waiting for others to join...</span>
             </MyModal>
 
-            {/* Modal for answer input */}
             <MyModal
                 open={gameStatus === "Assigning" || gameStatus === "Assigned"}
                 buttons={gameStatus === "Assigning" ? [assignButton] : []}
@@ -338,7 +310,6 @@ const GameRoom = () => {
                 </Box>
             </MyModal>
 
-            {/* End game modal */}
             <MyModal
                 open={gameStatus === "Finish" || gameStatus === "Pending"}
                 buttons={
@@ -360,7 +331,7 @@ const GameRoom = () => {
                     )}
                 </Box>
             </MyModal>
-        </Box>
+        </>
     );
 };
 

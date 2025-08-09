@@ -247,9 +247,9 @@ io.on("connection", (socket) => {
             p.targetWord = null;
             p.guesses = [];
             p.status = replay ? "Playing" : "Waiting";
-            io.to(p.socketId).emit("resetGameStatus", replay);
         });
         room.status = replay ? "Playing" : "Waiting";
+        io.to(room.socketId).emit("resetGameStatus", replay);
         emitRooms();
     };
 
@@ -295,19 +295,18 @@ io.on("connection", (socket) => {
         if (allHaveAnswers) {
             room.players.forEach((p) => {
                 p.status = "Playing";
-                io.to(p.socketId).emit("startWordle", room.mode);
             });
+            io.to(room.socketId).emit("startWordle", room.mode);
         }
     };
 
     const gameFinished = ({ room, player, winner }) => {
         const opponent = getOpponent(room, player.id);
-        console.log({ opponent, players });
         if (opponent && players[opponent?.id]?.status === "offline") {
             room.players = room.player.filter((p) => p.id === opponent.id);
         }
         room.players.forEach((p) => {
-            io.to(p.socketId).emit("endGame", {
+            io.to(room.socketId).emit("endGame", {
                 answer: p.targetWord,
                 winner: winner?.id,
             });
@@ -331,10 +330,10 @@ io.on("connection", (socket) => {
         );
         rooms[roomId] = {
             id: roomId,
+            socketId: roomId,
             hostPlayer: {
                 id: player.id,
                 name: player.name,
-                socketId: socket.id,
             },
             players: [
                 {
@@ -387,9 +386,9 @@ io.on("connection", (socket) => {
         socket.roomId = roomId;
 
         emitRooms();
-
         if (room.status !== "Playing") {
             // for status === Waiting only
+            resetGameStatus(room, false);
             const isSinglePlayMode = isSinglePlayerMode(room);
             if (!isSinglePlayMode) {
                 const playerExist = room.players.find(
@@ -406,11 +405,10 @@ io.on("connection", (socket) => {
                 } else {
                     playerExist.socketId = socket.id;
                 }
-                room.players
-                    .filter((p) => p.id !== player.id)
-                    .forEach((p) =>
-                        io.to(p.socketId).emit("playerJoined", player)
-                    );
+                const opponent = room.players.find((p) => p.id !== player.id);
+                if (opponent) {
+                    io.to(room.socketId).emit("updatePlayers", room.players);
+                }
             }
             if (
                 isSinglePlayMode ||
@@ -572,7 +570,6 @@ io.on("connection", (socket) => {
 
     socket.on("replayGame", ({ roomId }) => {
         const room = rooms[roomId];
-        console.log(JSON.stringify(room));
         if (room) {
             if (
                 (isSinglePlayerMode(room) && room.players.length === 1) ||
@@ -595,7 +592,6 @@ io.on("connection", (socket) => {
             // Notify others
             room.players.forEach((p) => {
                 resetGameStatus(room, false);
-                io.to(p.socketId).emit("playerLeft", leftPlayer);
             });
             // Update host if needed
             if (room.players.length > 0) {
@@ -604,6 +600,7 @@ io.on("connection", (socket) => {
                 delete rooms[roomId];
             }
             room.status = "Waiting";
+            io.to(room.socketId).emit("playerLeft", leftPlayer);
             emitRooms();
         }
     });
@@ -645,11 +642,11 @@ io.on("connection", (socket) => {
                     // All offline and game finished
                     delete rooms[roomId];
                 } else {
-                    notifyRoomPlayers();
                     // remove disconnected player
                     room.players = room.players.filter(
                         (p) => p.id !== disconnectedPlayerId
                     );
+                    notifyRoomPlayers();
                     updateHost(room);
                 }
                 emitRooms();

@@ -6,7 +6,7 @@ body {
 }
 
 .p-component {
-    font-family: 'Russo One', sans-serif !important;
+    font-family: "Russo One", sans-serif !important;
 }
 
 .background-image {
@@ -77,19 +77,12 @@ body {
 
 .variant {
     background-color: transparent;
-    color: #6aaa64;
     border: none;
-    padding: 6px 8px;
+    padding: 0px !important;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12px !important;
     font-weight: 500;
     text-transform: none;
     outline: none;
-    transition: color 0.2s;
-    padding-top: 12px;
-    padding-bottom: 12px;
-}
-
-.variant:hover {
-    color: #6aaa64;
+    margin-top: 12px !important;
 }

@@ -10,11 +10,19 @@ import { useLoginMutation, useRegisterMutation } from "../../request/hook";
 import { useToastContext } from "../provider/ToastProvider";
 import MyButton from "../common/MyButton";
 import logo from "../../assets/image/logo.png";
+import LoadingOverlay from "../common/LoadingOverlay";
 
 export const LoginForm = () => {
-    const { mutate: mutateRegister } = useRegisterMutation();
-    const { mutate: mutateLogin } = useLoginMutation();
-    const { register, handleSubmit } = useForm();
+    const { mutate: mutateRegister, isPending: isRegistering } =
+        useRegisterMutation();
+    const { mutate: mutateLogin, isPending: isLoginLoading } =
+        useLoginMutation();
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        reset
+    } = useForm();
     const navigate = useNavigate();
     const [isRegister, setIsRegister] = useState(false);
     const setUser = useStore((state) => state.setUser);
@@ -53,9 +61,11 @@ export const LoginForm = () => {
     };
 
     const handleRegisterMode = () => {
+        reset()
         setIsRegister(!isRegister);
     };
 
+    if (isLoginLoading || isRegistering) return <LoadingOverlay />;
     return (
         <Container component="main" maxWidth="xs">
             {/* <CssBaseline /> */}
@@ -97,8 +107,22 @@ export const LoginForm = () => {
                             label="NICKNAME"
                             name="nickname"
                             autoComplete="nickname"
-                            autoFocus
-                            {...register("nickname")}
+                            inputProps={{ maxLength: 8 }}
+                            {...register("nickname", {
+                                required: "Nickname is required",
+                                maxLength: {
+                                    value: 8,
+                                    message: "Max 8 characters allowed",
+                                },
+                                validate: (value) => {
+                                    return (
+                                        /^[a-zA-Z0-9 ]*$/.test(value) ||
+                                        "Special characters are not allowed"
+                                    );
+                                },
+                            })}
+                            error={Boolean(errors.nickName)}
+                            helperText={errors.nickName?.message}
                         />
                     )}
                     <TextField
@@ -109,7 +133,17 @@ export const LoginForm = () => {
                         label="USERNAME"
                         name="username"
                         autoComplete="username"
-                        {...register("username")}
+                        {...register("username", {
+                            required: "Required",
+                            validate: (value) => {
+                                return (
+                                    /^[a-zA-Z0-9 ]*$/.test(value) ||
+                                    "Special characters are not allowed"
+                                );
+                            },
+                        })}
+                        error={Boolean(errors.username)}
+                        helperText={errors.username?.message}
                     />
                     <TextField
                         margin="normal"
@@ -120,7 +154,24 @@ export const LoginForm = () => {
                         type="password"
                         id="password"
                         autoComplete="current-password"
-                        {...register("password")}
+                        {...register("password", {
+                            required: "Required",
+                            minLength: {
+                                value: 8,
+                                message:
+                                    "Password must be at least 8 characters",
+                            },
+                            validate: (value) => {
+                                const hasSpecialChar =
+                                    /[!@#$%^&*(),.?":{}|<>]/.test(value);
+                                return (
+                                    hasSpecialChar ||
+                                    "Password must contain at least one special character"
+                                );
+                            },
+                        })}
+                        error={Boolean(errors.password)}
+                        helperText={errors.password?.message}
                     />
                     <MyButton type="submit" style={{ width: "100%" }}>
                         {isRegister ? "REGISTER" : "LOGIN"}

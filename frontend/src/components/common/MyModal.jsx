@@ -6,7 +6,7 @@ const MyModal = ({ open, buttons, children }) => {
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content">
+            <div className="glowing-box modal-content">
                 {children}
                 {buttons && buttons.length > 0 && (
                     <div className="modal-buttons">

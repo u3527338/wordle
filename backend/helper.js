@@ -50,7 +50,6 @@ export const updateHost = (room) => {
         room.hostPlayer = {
             id: nextPlayer.id,
             name: nextPlayer.name,
-            socketId: nextPlayer.socketId,
         };
     }
 };
@@ -68,7 +67,6 @@ export const updateGameInfo = async ({
     try {
         // Check if record already exists
         let gameRecord = await GameHistoryModel.findOne({ gameId });
-        console.log({ gameRecord });
         if (!gameRecord) {
             // If not, create a new game record with current user
             gameRecord = new GameHistoryModel({
@@ -83,12 +81,6 @@ export const updateGameInfo = async ({
         // Update player's stats
         await Promise.all(
             players.map(async (player) => {
-                console.log({
-                    userId: player.id,
-                    mode,
-                    isWinner: player.id === winnerUserId,
-                    guessesCount: player.guesses ? player.guesses.length : 0,
-                });
                 await updatePlayerStats({
                     userId: player.id,
                     mode,
@@ -171,7 +163,7 @@ export const getColors = (guess, target) => {
         if (result[i] !== "green") {
             const index = targetLetters.indexOf(guessLetters[i]);
             if (index !== -1) {
-                result[i] = "yellow";
+                result[i] = "#ffd54f";
                 targetLetters[index] = null; // mark as used
             }
         }

@@ -1,21 +1,53 @@
+import { Box, Typography } from "@mui/material";
 import { WORDLE_TRIALS } from "../../constants/constants";
 import "../../styles/Wordle.css";
 
-const LetterCell = ({ letter, color, animate, shake }) => {
-    const style = {
-        backgroundColor: color || "#ddd",
-    };
-    const className = `letter-cell ${animate ? "flip" : ""} ${
-        shake ? "shake" : ""
-    }`;
+const LetterCell = ({ letter, color, animate, shake, gridCount }) => {
+    // Compose className string based on props
+    const classNames = [
+        animate ? "flip" : "",
+        shake ? "shake" : "",
+        "letter-cell",
+    ]
+        .filter(Boolean)
+        .join(" ");
+
     return (
-        <div style={style} className={className}>
-            <span>{letter}</span>
-        </div>
+        <Box
+            sx={{
+                backgroundColor: color || "#ddd",
+                width: 50,
+                height: 50,
+                fontSize: { xs: "0.8rem", sm: "1.25rem" },
+                fontWeight: "bold",
+                borderRadius: 1,
+                border: "2px solid #999",
+                boxShadow: "inset 0 0 5px rgba(0,0,0,0.2)",
+                cursor: "default",
+                "@media(max-width: 800px)": {
+                    width: "40px",
+                    height: "40px",
+                },
+                "@media(max-width: 400px)": {
+                    width: "28px",
+                    height: "28px",
+                },
+            }}
+            className={classNames}
+        >
+            <Typography
+                sx={{
+                    textShadow: "0px 1px 2px #555",
+                    fontSize: { xs: 10, sm: 16 },
+                }}
+            >
+                {letter}
+            </Typography>
+        </Box>
     );
 };
 
-const WordleGrid = ({ guesses, currentGuess = "", shakeRow }) => {
+const WordleGrid = ({ guesses, currentGuess = "", shakeRow, gridCount }) => {
     const rows = Array.from({ length: WORDLE_TRIALS }, (_, i) => i);
     return (
         <div className="wordle-grid-container">
@@ -39,6 +71,7 @@ const WordleGrid = ({ guesses, currentGuess = "", shakeRow }) => {
                                 color={isGuessRow ? colors[i] : undefined}
                                 animate={isGuessRow}
                                 shake={rowIdx === shakeRow}
+                                gridCount={gridCount}
                             />
                         ))}
                     </div>

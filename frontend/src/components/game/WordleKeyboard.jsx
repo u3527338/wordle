@@ -7,37 +7,38 @@ const keys = [
     ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "BACKSPACE"],
 ];
 
-const KeyboardButton = ({ label, onClick, isPressed }) => {
-    return (
-        <Button
-            variant="outlined"
-            onMouseDown={onClick}
-            sx={{
-                minWidth: "40px",
-                padding: "10px",
-                borderRadius: "8px",
-                textTransform: "uppercase",
-                fontSize: "14px",
-                margin: "2px",
-                backgroundColor: "#1976d2",
-                color: "#fff",
-                boxShadow: isPressed
-                    ? "inset 0 0 20px rgba(0,0,0,0.3)"
-                    : "none",
-                transform: isPressed ? "translateY(2px)" : "none",
-                transition: "all 0.1s ease-in-out",
-                "&:hover": {
-                    backgroundColor: "#1565c0",
-                },
-            }}
-        >
-            {label}
-        </Button>
-    );
-};
+const KeyboardButton = ({ label, onClick, isPressed }) => (
+    <Button
+        variant="outlined"
+        onMouseDown={onClick}
+        sx={{
+            minWidth:
+                label === "ENTER" || label === "BACKSPACE"
+                    ? { xs: 25, sm: 80 }
+                    : { xs: 15, sm: 50 },
+            padding: { xs: "6px", sm: "10px" },
+            borderRadius: { xs: "6px", sm: "8px" },
+            textTransform: "uppercase",
+            lineHeight: { xs: "12px", sm: "16px" },
+            fontSize: { xs: "12px", sm: "16px" },
+            margin: "2px",
+            backgroundColor: "#1976d2",
+            color: "#fff",
+            boxShadow: isPressed ? "inset 0 0 20px rgba(0,0,0,0.3)" : "none",
+            transform: isPressed ? "translateY(2px)" : "none",
+            transition: "all 0.1s ease-in-out",
+            "&:hover": {
+                backgroundColor: "#1565c0",
+            },
+        }}
+    >
+        {label}
+    </Button>
+);
 
 function WordleKeyboard({ onKeyPress }) {
     const [pressedKeys, setPressedKeys] = useState({});
+
     // Handle physical keyboard input
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -47,11 +48,9 @@ function WordleKeyboard({ onKeyPress }) {
                 key === "Enter" ||
                 key === "Backspace"
             ) {
-                setPressedKeys((prev) => ({
-                    ...prev,
-                    [key.toUpperCase()]: true,
-                }));
-                onKeyPress({ key: key.length === 1 ? key.toUpperCase() : key });
+                const upperKey = key.toUpperCase();
+                setPressedKeys((prev) => ({ ...prev, [upperKey]: true }));
+                onKeyPress({ key: upperKey });
             }
         };
 
@@ -62,10 +61,8 @@ function WordleKeyboard({ onKeyPress }) {
                 key === "Enter" ||
                 key === "Backspace"
             ) {
-                setPressedKeys((prev) => ({
-                    ...prev,
-                    [key.toUpperCase()]: false,
-                }));
+                const upperKey = key.toUpperCase();
+                setPressedKeys((prev) => ({ ...prev, [upperKey]: false }));
             }
         };
 
@@ -78,39 +75,62 @@ function WordleKeyboard({ onKeyPress }) {
     }, [onKeyPress]);
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {keys.map((row, rowIndex) => (
-                <div
-                    key={rowIndex}
-                    style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        gap: "4px",
-                    }}
-                >
-                    {row.map((key) => (
-                        <KeyboardButton
-                            key={key}
-                            label={key}
-                            isPressed={pressedKeys[key]}
-                            onClick={() => {
-                                setPressedKeys((prev) => ({
-                                    ...prev,
-                                    [key]: true,
-                                }));
-                                onKeyPress({ key });
-                                // Release after brief delay
-                                setTimeout(() => {
+        <div
+            style={{
+                width: "100%",
+                maxWidth: 700,
+                margin: "0 auto",
+                paddingTop: "16px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                "@media(maxWidth: 400px)": {
+                    transform: "scale(0.6)",
+                    transformOrigin: "bottom center",
+                },
+            }}
+        >
+            {/* Wrap all rows in a container that keeps layout fixed */}
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: "100%",
+                }}
+            >
+                {keys.map((row, rowIndex) => (
+                    <div
+                        key={rowIndex}
+                        style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            flexWrap: "nowrap", // no wrapping
+                            width: "100%",
+                        }}
+                    >
+                        {row.map((key) => (
+                            <KeyboardButton
+                                key={key}
+                                label={key}
+                                isPressed={pressedKeys[key]}
+                                onClick={() => {
                                     setPressedKeys((prev) => ({
                                         ...prev,
-                                        [key]: false,
+                                        [key]: true,
                                     }));
-                                }, 150);
-                            }}
-                        />
-                    ))}
-                </div>
-            ))}
+                                    onKeyPress({ key });
+                                    setTimeout(() => {
+                                        setPressedKeys((prev) => ({
+                                            ...prev,
+                                            [key]: false,
+                                        }));
+                                    }, 150);
+                                }}
+                            />
+                        ))}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

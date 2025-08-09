@@ -20,7 +20,6 @@ import { useCreateRoomMutation, useJoinRoomMutation } from "../request/hook";
 import socket from "../socket";
 import "../styles/WaitingLobby.css";
 import MyButton from "./common/MyButton";
-import { generateUUID } from "../constants/helper.js";
 
 const modes = {
     singlePlayer: <PersonIcon />,
@@ -67,7 +66,8 @@ const RoomTable = ({ rows, onJoin }) => {
                 <TableBody>
                     {hasRecords ? (
                         rows.map((row) => {
-                            const maxPlayer = row.mode === "singlePlayer" ? 1 : 2;
+                            const maxPlayer =
+                                row.mode === "singlePlayer" ? 1 : 2;
                             return (
                                 <TableRow key={row.id} sx={{ borderRadius: 2 }}>
                                     {/* <Cell value={row.id} /> */}
@@ -139,7 +139,9 @@ const WaitingLobby = () => {
     const handleCreateRoom = () => {
         const player = { id: userId, name: nickName };
         const data = { player, mode: gameMode };
-        const roomId = generateUUID();
+        const roomId = `${Math.random()
+            .toString(36)
+            .substring(2, 9)}-${Date.now()}`;
         socket.emit("createRoom", {
             roomId,
             player: { id: userId, name: nickName },
