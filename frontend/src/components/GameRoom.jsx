@@ -9,7 +9,7 @@ import MyModal from "./common/MyModal";
 import WordleGridsContainer from "./game/WordleGridContainer";
 import WordleKeyboard from "./game/WordleKeyboard";
 import { useToastContext } from "./provider/ToastProvider";
-import "../styles/GameRoom.css"
+import "../styles/GameRoom.css";
 
 const GameRoom = () => {
     const { roomId } = useParams();
@@ -141,21 +141,31 @@ const GameRoom = () => {
         } else if (gameStatus === "Playing") {
             setMessage(null);
         } else if (gameStatus === "Pending") {
-            setMessage(`Your answer is ${answer}`);
+            setMessage(
+                answer
+                    ? `${
+                          gameMode === "twoPlayerServer" ? "The" : "Your"
+                      } answer is ${answer}`
+                    : null
+            );
         } else if (gameStatus === "Finish") {
             if (!winner) {
                 if (gameMode === "singlePlayer") {
-                    setMessage(`The answer is ${answer}`);
+                    setMessage(answer ? `The answer is ${answer}` : null);
                 } else {
-                    setMessage(`No one wins. Your answer is ${answer}`);
+                    setMessage(
+                        answer ? `No one wins. Your answer is ${answer}` : null
+                    );
                 }
             } else if (winner === userId) {
                 setMessage(`Congratulations!`);
             } else {
                 setMessage(
-                    `Your opponent wins the game.\n${
-                        gameMode === "twoPlayerServer" ? "The" : "Your"
-                    } answer is ${answer}`
+                    answer
+                        ? `Your opponent wins the game.\n${
+                              gameMode === "twoPlayerServer" ? "The" : "Your"
+                          } answer is ${answer}`
+                        : null
                 );
             }
         }
@@ -260,7 +270,7 @@ const GameRoom = () => {
             <WordleKeyboard onKeyPress={handleKeyDown} />
 
             <MyModal open={gameStatus === "Waiting"} buttons={[leaveButton]}>
-                <span>Waiting for others to join...</span>
+                <span>Waiting for opponent...</span>
             </MyModal>
 
             <MyModal
@@ -304,7 +314,7 @@ const GameRoom = () => {
                     )}
                     {gameStatus === "Assigned" && (
                         <Typography variant="body1">
-                            Waiting for your opponent to submit their answer...
+                            Waiting for your opponent...
                         </Typography>
                     )}
                 </Box>

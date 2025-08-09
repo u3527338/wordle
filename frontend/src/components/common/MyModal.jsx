@@ -1,5 +1,5 @@
-import "../../styles/Modal.css";
 import MyButton from "./MyButton";
+import "../../styles/Modal.css";
 
 const MyModal = ({ open, buttons, children }) => {
     if (!open) return null;

@@ -11,6 +11,7 @@ import { useToastContext } from "../provider/ToastProvider";
 import MyButton from "../common/MyButton";
 import logo from "../../assets/image/logo.png";
 import LoadingOverlay from "../common/LoadingOverlay";
+import MyModal from "../common/MyModal";
 
 export const LoginForm = () => {
     const { mutate: mutateRegister, isPending: isRegistering } =
@@ -21,7 +22,7 @@ export const LoginForm = () => {
         register,
         handleSubmit,
         formState: { errors },
-        reset
+        reset,
     } = useForm();
     const navigate = useNavigate();
     const [isRegister, setIsRegister] = useState(false);
@@ -61,11 +62,22 @@ export const LoginForm = () => {
     };
 
     const handleRegisterMode = () => {
-        reset()
+        reset();
         setIsRegister(!isRegister);
     };
 
-    if (isLoginLoading || isRegistering) return <LoadingOverlay />;
+    if (isLoginLoading || isRegistering)
+        return (
+            <MyModal open={true}>
+                <span>
+                    {isRegistering
+                        ? "Registering your account, please wait..."
+                        : isLoginLoading
+                        ? "Logging in, please wait..."
+                        : "Loading..."}
+                </span>
+            </MyModal>
+        );
     return (
         <Container component="main" maxWidth="xs">
             {/* <CssBaseline /> */}

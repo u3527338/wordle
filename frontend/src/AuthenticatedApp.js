@@ -2,16 +2,22 @@ import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { GameRoute } from "./routes/GameRoute";
 import { LobbyRoute } from "./routes/LobbyRoute";
 import socket from "./socket";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "./hook/useStore";
+import MyModal from "./components/common/MyModal";
 
 export const AuthenticatedApp = () => {
     const navigate = useNavigate();
     const { user } = useStore();
     const { userId, nickName } = user;
+    const [gameLoading, setGameLoading] = useState(true);
+
     const socketHandlers = {
         inGame: (roomId) => {
-            navigate(`/wordle/${roomId}`);
+            setGameLoading(false);
+            if (roomId) {
+                navigate(`/wordle/${roomId}`);
+            }
         },
     };
 
@@ -29,10 +35,17 @@ export const AuthenticatedApp = () => {
 
     useEffect(() => {
         socket.emit("reconnect", userId);
+        setGameLoading(true);
         registerSocketEvents(socketHandlers);
         return () => deregisterSocketEvents(socketHandlers);
     }, []);
 
+    if (gameLoading)
+        return (
+            <MyModal open={true}>
+                <span>Retriving game status...</span>
+            </MyModal>
+        );
     return (
         <Routes>
             <Route path="/wordle" element={<LobbyRoute />} />

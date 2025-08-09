@@ -99,7 +99,7 @@ app.post("/register", async (req, res) => {
                 totalGuesses: 0,
                 lastPlayed: null,
             },
-            createdAt: new Date()
+            createdAt: new Date(),
         });
 
         await newUser.save();
@@ -359,19 +359,21 @@ io.on("connection", (socket) => {
             socketId: socket.id,
         };
         const roomId = findRoomIdByPlayerId(rooms, { id: userId });
-        if (!!roomId) {
-            const room = rooms[roomId];
-            const player = room.players.find((p) => p.id === userId);
-            player.socketId = socket.id;
-            emitRooms();
-
-            room.players.forEach((p) => {
-                if (p.id !== userId) {
-                    io.to(p.socketId).emit("playerRejoined", player);
-                }
-            });
-            socket.emit("inGame", roomId);
+        if (!roomId) {
+            socket.emit("inGame", null);
+            return;
         }
+        const room = rooms[roomId];
+        const player = room.players.find((p) => p.id === userId);
+        player.socketId = socket.id;
+        emitRooms();
+
+        room.players.forEach((p) => {
+            if (p.id !== userId) {
+                io.to(p.socketId).emit("playerRejoined", player);
+            }
+        });
+        socket.emit("inGame", roomId);
     });
 
     socket.on("joinRoom", ({ roomId, player }) => {

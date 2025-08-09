@@ -18,12 +18,10 @@ const LetterCell = ({ letter, color, animate, shake, gridCount }) => {
                 aspectRatio: 1 / 1,
                 backgroundColor: color || "#ddd",
                 width: 50,
-                fontSize: { xs: "0.8rem", sm: "1.25rem" },
                 fontWeight: "bold",
                 borderRadius: 1,
                 border: "2px solid #999",
                 boxShadow: "inset 0 0 5px rgba(0,0,0,0.2)",
-                cursor: "default",
                 "@media(max-width: 800px)": {
                     width: "40px",
                 },
@@ -36,7 +34,7 @@ const LetterCell = ({ letter, color, animate, shake, gridCount }) => {
             <Typography
                 sx={{
                     textShadow: "0px 1px 2px #555",
-                    fontSize: { xs: 10, sm: 16 },
+                    fontSize: { xs: gridCount === 1 ? 16 : 14, sm: 20 },
                 }}
             >
                 {letter}
