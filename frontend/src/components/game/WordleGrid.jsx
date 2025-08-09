@@ -15,9 +15,9 @@ const LetterCell = ({ letter, color, animate, shake, gridCount }) => {
     return (
         <Box
             sx={{
+                aspectRatio: 1 / 1,
                 backgroundColor: color || "#ddd",
                 width: 50,
-                height: 50,
                 fontSize: { xs: "0.8rem", sm: "1.25rem" },
                 fontWeight: "bold",
                 borderRadius: 1,
@@ -26,11 +26,9 @@ const LetterCell = ({ letter, color, animate, shake, gridCount }) => {
                 cursor: "default",
                 "@media(max-width: 800px)": {
                     width: "40px",
-                    height: "40px",
                 },
                 "@media(max-width: 400px)": {
-                    width: "28px",
-                    height: "28px",
+                    width: gridCount === 1 ? "40px" : "28px",
                 },
             }}
             className={classNames}

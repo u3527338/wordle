@@ -16,6 +16,7 @@ const KeyboardButton = ({ label, onClick, isPressed }) => (
                 label === "ENTER" || label === "BACKSPACE"
                     ? { xs: 40, sm: 80 }
                     : { xs: 30, sm: 50 },
+            minHeight: { xs: 40, sm: 50 },
             padding: { xs: "6px", sm: "10px" },
             borderRadius: { xs: "6px", sm: "8px" },
             textTransform: "uppercase",

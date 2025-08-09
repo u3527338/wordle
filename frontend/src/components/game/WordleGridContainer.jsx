@@ -54,6 +54,7 @@ const WordleGridsContainer = ({ grids }) => {
                         guesses={grid.guesses}
                         currentGuess={grid.currentGuess}
                         shakeRow={grid.shakeRow}
+                        gridCount={grids.length}
                     />
                 </Box>
             ))}
