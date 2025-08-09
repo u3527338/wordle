@@ -1,9 +1,12 @@
+import axios from "axios";
 import bcrypt from "bcrypt";
 import bodyParser from "body-parser";
 import cors from "cors";
+import { configDotenv } from "dotenv";
 import express from "express";
 import http from "http";
 import mongoose from "mongoose";
+import cron from "node-cron";
 import { Server } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
 import GameRoomModel from "./db/gameRoomModel.js";
@@ -20,17 +23,17 @@ import {
     updateGameInfo,
     updateHost,
 } from "./helper.js";
-import { configDotenv } from "dotenv";
 
 const app = express();
 configDotenv();
 
 const MONGO_URL = process.env.MONGO_URL;
-const PORT = 4000;
-const CORS_ORIGIN = [
-    "https://wordle-three-rho.vercel.app",
-    "http://localhost:3000",
-];
+const PORT = process.env.PORT;
+const PRODUCTION_URL = process.env.CORS_ORIGIN,
+    DEVELOPMENT_URL = process.env.CORS_ORIGIN_DEV,
+    API_ENDPOINT = process.env.API_ENDPOINT,
+    NODE_ENV = process.env.NODE_ENV;
+const CORS_ORIGIN = [PRODUCTION_URL, DEVELOPMENT_URL];
 
 mongoose
     .connect(MONGO_URL)
@@ -60,8 +63,26 @@ const WORDLE_TRIALS = 6;
 const players = {};
 const rooms = {};
 
+//Scheduled job every minute to keep render server alive
+cron.schedule("* * * * *", () => {
+    if (NODE_ENV !== "production") return;
+    axios
+        .get(`${API_ENDPOINT}/keepalive`)
+        .then((response) => {
+            console.log("Keepalive ping sent:", response.status);
+        })
+        .catch((error) => {
+            console.error("Error sending keepalive ping:", error);
+        });
+});
+
 app.get("/", (req, res) => {
     res.json("connected");
+});
+
+app.get("/keepalive", (req, res) => {
+    console.log("Keepalive ping received at", new Date());
+    res.status(200).send("OK");
 });
 
 app.post("/register", async (req, res) => {
