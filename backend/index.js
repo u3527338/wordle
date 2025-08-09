@@ -65,6 +65,7 @@ const rooms = {};
 
 //Scheduled job every minute to keep render server alive
 cron.schedule("* * * * *", () => {
+    console.log("Scheduled job initiated", `${API_ENDPOINT}/keepalive`);
     axios
         .get(`${API_ENDPOINT}/keepalive`)
         .then((response) => {
