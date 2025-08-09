@@ -65,7 +65,6 @@ const rooms = {};
 
 //Scheduled job every minute to keep render server alive
 cron.schedule("* * * * *", () => {
-    if (NODE_ENV !== "production") return;
     axios
         .get(`${API_ENDPOINT}/keepalive`)
         .then((response) => {
