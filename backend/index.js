@@ -99,6 +99,7 @@ app.post("/register", async (req, res) => {
                 totalGuesses: 0,
                 lastPlayed: null,
             },
+            createdAt: new Date()
         });
 
         await newUser.save();

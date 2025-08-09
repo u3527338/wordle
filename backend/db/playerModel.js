@@ -44,6 +44,7 @@ const PlayerSchema = new mongoose.Schema({
         },
         lastPlayed: { type: Date },
     },
+    createdAt: { type: Date },
 });
 
 const PlayerModel = mongoose.model("Players", PlayerSchema);
